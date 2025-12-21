@@ -416,6 +416,75 @@
             font-size: 0.9em;
             color: #aaa;
         }
+
+        /* Sticky Footer for Voting Mode Toggle */
+        #voting-mode-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1a1a1a;
+            border-top: 2px solid #4a9eff;
+            padding: 12px 20px;
+            z-index: 1000;
+            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.5);
+        }
+
+        .voting-mode-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .voting-mode-label {
+            font-weight: 600;
+            color: #6ab7ff;
+            font-size: 0.95em;
+        }
+
+        .voting-mode-toggle {
+            display: flex;
+            gap: 8px;
+        }
+
+        .mode-btn {
+            background: #2a2a2a;
+            border: 2px solid #4a4a4a;
+            color: #aaa;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .mode-btn:hover {
+            background: #3a3a3a;
+            border-color: #5a5a5a;
+            color: #ccc;
+        }
+
+        .mode-btn.active {
+            background: #2a4a6a;
+            border-color: #4a9eff;
+            color: #fff;
+        }
+
+        .voting-mode-hint {
+            color: #888;
+            font-size: 0.85em;
+            font-style: italic;
+        }
+
+        /* Add padding to body so content isn't hidden behind footer */
+        body {
+            padding-bottom: 80px;
+        }
     </style>
 </head>
 
@@ -426,8 +495,8 @@
         <a href="analyzer.html" class="active">Scenario Analyzer</a>
     </nav>
 
-    <h1>Approval Runoff Scenario Analyzer</h1>
-    <p style="font-size: 1.1em; color: #ccc; margin-bottom: 20px;">
+    <h1 id="page-title">Approval Runoff Scenario Analyzer</h1>
+    <p id="page-description" style="font-size: 1.1em; color: #ccc; margin-bottom: 20px;">
         Define a specific <strong>approval voting with top-2 runoff</strong> scenario and see which approval ballots lead to which outcomes.
         The top two vote-getters advance to a runoff election. Find your optimal voting strategy given your preferences and beliefs.
     </p>
@@ -449,27 +518,47 @@
         <h2>Step 2: Configure the Scenario</h2>
 
         <h3>Candidate Viability (First Round)</h3>
-        <div class="info-box">
-            Assign each candidate their perceived viability in the <strong>first round</strong> (before the top-2 runoff):
+        <div class="info-box" id="viability-info-box">
+            Assign each candidate their perceived viability in the <strong>first round</strong>:
             <ul style="margin: 10px 0;">
-                <li><strong>Frontrunner</strong> (100 votes) — Leading candidate, likely to make runoff</li>
-                <li><strong>Viable</strong> (99 votes) — Competitive but not leading, could make runoff</li>
-                <li><strong>Nonviable</strong> (10 votes) — No realistic chance to reach the runoff</li>
+                <li><strong>Frontrunner</strong> (100 votes) — Leading candidate</li>
+                <li><strong>Viable</strong> (99 votes) — Competitive but not leading</li>
+                <li><strong>Nonviable</strong> (10 votes) — No realistic chance</li>
             </ul>
         </div>
         <div id="candidateConfig" class="candidate-config"></div>
 
-        <h3>Runoff Matchups (Second Round)</h3>
-        <div class="info-box">
-            For each pair of viable candidates, who would win if they faced each other in the <strong>top-2 runoff</strong>?
-            <br><small>(These are your beliefs about how candidates would perform head-to-head in the runoff election)</small>
+        <div id="matchup-section">
+            <h3>Runoff Matchups (Second Round)</h3>
+            <div class="info-box">
+                For each pair of viable candidates, who would win if they faced each other in the <strong>top-2 runoff</strong>?
+                <br><small>(These are your beliefs about how candidates would perform head-to-head in the runoff election)</small>
+            </div>
+            <div id="matchupConfig" class="matchup-config"></div>
         </div>
-        <div id="matchupConfig" class="matchup-config"></div>
 
         <button onclick="analyzeScenario()">Analyze Ballots</button>
     </div>
 
     <div id="results" class="results"></div>
+
+    <!-- Sticky Footer for Voting Mode Toggle -->
+    <div id="voting-mode-footer">
+        <div class="voting-mode-container">
+            <span class="voting-mode-label">Voting System:</span>
+            <div class="voting-mode-toggle">
+                <button id="mode-runoff" class="mode-btn active" onclick="setVotingMode('runoff')">
+                    🗳️ Approval + Runoff
+                </button>
+                <button id="mode-approval" class="mode-btn" onclick="setVotingMode('approval')">
+                    ✓ Ordinary Approval
+                </button>
+            </div>
+            <span class="voting-mode-hint" id="mode-hint">
+                Top 2 advance to a runoff election
+            </span>
+        </div>
+    </div>
 
     <script src="shared.js"></script>
     <script>
@@ -477,6 +566,90 @@
         let preference = [];
         let voteTiers = {}; // candidate -> 'frontrunner' | 'viable' | 'nonviable'
         let matchups = {}; // 'A-B' -> true means A beats B
+
+        // Update page text based on voting mode
+        function updatePageText() {
+            const isApprovalMode = getVotingMode() === 'approval';
+            
+            // Update title
+            document.getElementById('page-title').textContent = isApprovalMode 
+                ? 'Ordinary Approval Voting Analyzer' 
+                : 'Approval Runoff Scenario Analyzer';
+            
+            // Update description
+            document.getElementById('page-description').innerHTML = isApprovalMode
+                ? 'Define a specific <strong>ordinary approval voting</strong> scenario and see which approval ballots lead to which outcomes. The candidate(s) with the most votes win directly. Find your optimal voting strategy given your preferences and beliefs.'
+                : 'Define a specific <strong>approval voting with top-2 runoff</strong> scenario and see which approval ballots lead to which outcomes. The top two vote-getters advance to a runoff election. Find your optimal voting strategy given your preferences and beliefs.';
+            
+            // Update footer toggle buttons - use remove/add instead of toggle for reliability
+            const runoffBtn = document.getElementById('mode-runoff');
+            const approvalBtn = document.getElementById('mode-approval');
+            if (runoffBtn && approvalBtn) {
+                if (isApprovalMode) {
+                    runoffBtn.classList.remove('active');
+                    approvalBtn.classList.add('active');
+                } else {
+                    runoffBtn.classList.add('active');
+                    approvalBtn.classList.remove('active');
+                }
+            }
+            
+            document.getElementById('mode-hint').textContent = isApprovalMode 
+                ? 'Highest vote-getter(s) win directly' 
+                : 'Top 2 advance to a runoff election';
+            
+            // Keep matchup section visible but update its info text to explain it's ignored in approval mode
+            const matchupSection = document.getElementById('matchup-section');
+            if (matchupSection) {
+                const infoBox = matchupSection.querySelector('.info-box');
+                if (infoBox) {
+                    if (isApprovalMode) {
+                        infoBox.innerHTML = `
+                            <strong>Note:</strong> In <strong>ordinary approval mode</strong>, matchups are not used. 
+                            The candidate(s) with the most votes win directly, without a runoff.
+                            <br><small>(You can still configure matchups here to compare outcomes when switching back to runoff mode)</small>
+                        `;
+                        infoBox.style.borderLeftColor = '#ffaa55';
+                    } else {
+                        infoBox.innerHTML = `
+                            For each pair of viable candidates, who would win if they faced each other in the <strong>top-2 runoff</strong>?
+                            <br><small>(These are your beliefs about how candidates would perform head-to-head in the runoff election)</small>
+                        `;
+                        infoBox.style.borderLeftColor = '#4a9eff';
+                    }
+                }
+            }
+
+            // Update viability info box text
+            const viabilityInfo = document.getElementById('viability-info-box');
+            if (viabilityInfo) {
+                viabilityInfo.innerHTML = isApprovalMode
+                    ? `Assign each candidate their perceived viability:
+                        <ul style="margin: 10px 0;">
+                            <li><strong>Frontrunner</strong> (100 votes) — Leading candidate</li>
+                            <li><strong>Viable</strong> (99 votes) — Competitive but not leading</li>
+                            <li><strong>Nonviable</strong> (10 votes) — No realistic chance</li>
+                        </ul>`
+                    : `Assign each candidate their perceived viability in the <strong>first round</strong>:
+                        <ul style="margin: 10px 0;">
+                            <li><strong>Frontrunner</strong> (100 votes) — Leading candidate, likely to make runoff</li>
+                            <li><strong>Viable</strong> (99 votes) — Competitive but not leading, could make runoff</li>
+                            <li><strong>Nonviable</strong> (10 votes) — No realistic chance to reach the runoff</li>
+                        </ul>`;
+            }
+        }
+
+        // Listen for voting mode changes
+        window.addEventListener('votingModeChanged', (e) => {
+            updatePageText();
+            // If results are already displayed, re-analyze
+            if (document.getElementById('results').innerHTML.trim() !== '') {
+                analyzeScenario();
+            }
+        });
+
+        // Initialize page text on load
+        document.addEventListener('DOMContentLoaded', updatePageText);
 
         function setupScenario() {
             const input = document.getElementById('preference').value;
@@ -684,10 +857,21 @@
 
         function displayResults(baseVotes, sortedGroups, allBallotOutcomes) {
             const resultsDiv = document.getElementById('results');
+            const isApprovalMode = getVotingMode() === 'approval';
+            const outcomeLabel = isApprovalMode ? 'Winners' : 'Runoff Outcome';
+            const gammaDescription = isApprovalMode 
+                ? 'Set of winner(s) with highest votes' 
+                : 'Set of possible <strong>final runoff winners</strong> given a ballot';
 
             // Summary
             let html = `
                 <h2>Analysis Results</h2>
+                
+                ${isApprovalMode ? `
+                    <div class="info-box" style="border-left-color: #6aff6a; margin-bottom: 20px;">
+                        <strong>✓ Ordinary Approval Mode:</strong> The candidate(s) with the most first-round votes win directly. No runoff is held.
+                    </div>
+                ` : ''}
                 
                 <div class="vote-summary">
                     <h3 style="margin-top: 0;">Scenario Summary</h3>
@@ -707,15 +891,17 @@
                             </tr>
                         `).join('')}
                     </table>
-                    <div class="matchup-summary">
-                        <strong>Matchups:</strong> 
-                        ${Object.entries(matchups)
-                    .filter(([k, v]) => v === true)
-                    .map(([k, v]) => {
-                        const [c1, c2] = k.split('-');
-                        return `${c1} beats ${c2}`;
-                    }).join(', ') || 'None configured'}
-                    </div>
+                    ${!isApprovalMode ? `
+                        <div class="matchup-summary">
+                            <strong>Matchups:</strong> 
+                            ${Object.entries(matchups)
+                        .filter(([k, v]) => v === true)
+                        .map(([k, v]) => {
+                            const [c1, c2] = k.split('-');
+                            return `${c1} beats ${c2}`;
+                        }).join(', ') || 'None configured'}
+                        </div>
+                    ` : ''}
                 </div>
 
                 <div class="legend">
@@ -740,10 +926,10 @@
                 <div class="info-box">
                     <strong>Reading the Results:</strong>
                     <ul style="margin: 10px 0;">
-                        <li><strong>Γ (Gamma)</strong> = Set of possible <strong>final runoff winners</strong> given a ballot</li>
+                        <li><strong>Γ (Gamma)</strong> = ${gammaDescription}</li>
                         <li><strong>Optimal</strong> = Ballots that give you the best possible outcome</li>
                         <li><strong>Sincere</strong> = Ballots that approve a "prefix" of your preference (e.g., top 1, top 2, etc.)</li>
-                        <li><strong>Hover over a ballot</strong> to see which candidates advance to the runoff and who wins</li>
+                        <li><strong>Hover over a ballot</strong> to see ${isApprovalMode ? 'vote totals and winners' : 'which candidates advance to the runoff and who wins'}</li>
                     </ul>
                 </div>
             `;
@@ -761,7 +947,7 @@
                 html += `
                     <div class="outcome-group ${optimalClass}">
                         <h3>
-                            Runoff Outcome: Γ = ${gammaDisplay}
+                            ${outcomeLabel}: Γ = ${gammaDisplay}
                             <span class="outcome-rank ${rankClass}">
                                 ${group.isOptimal ? '★ OPTIMAL' : `Rank #${group.displayRank}`}
                             </span>
@@ -776,23 +962,27 @@
                     if (bo.isSincere) classes.push('sincere');
                     if (group.isOptimal) classes.push('optimal');
                     
-                    // Build tooltip showing runoff details
+                    // Build tooltip showing details
                     const outcome = bo.outcome;
-                    let tooltip = `First round with ${formatBallot(bo.ballot)}:\n`;
+                    let tooltip = `${isApprovalMode ? 'Votes' : 'First round'} with ${formatBallot(bo.ballot)}:\n`;
                     const votesWithBallot = {...baseVotes};
                     bo.ballot.forEach(c => votesWithBallot[c]++);
                     tooltip += `Votes: ${candidates.map(c => `${c}:${votesWithBallot[c]}`).join(', ')}\n\n`;
                     
-                    if (outcome.possibleRunoffs.length === 1) {
+                    if (isApprovalMode) {
+                        tooltip += `Winner(s): ${outcome.Gamma.join(', ')}`;
+                    } else if (outcome.possibleRunoffs.length === 1) {
                         const runoff = outcome.possibleRunoffs[0];
                         tooltip += `Top 2 runoff: ${runoff.pair[0]} vs ${runoff.pair[1]}\n`;
                         tooltip += `Winner: ${runoff.winner || 'Tie'}`;
-                    } else {
+                    } else if (outcome.possibleRunoffs.length > 1) {
                         tooltip += `Possible runoffs:\n`;
                         outcome.possibleRunoffs.forEach(r => {
                             tooltip += `  • ${r.pair[0]} vs ${r.pair[1]} → ${r.winner || 'Tie'}\n`;
                         });
                         tooltip += `Possible winners: ${outcome.Gamma.join(', ')}`;
+                    } else {
+                        tooltip += `Winners: ${outcome.Gamma.join(', ')}`;
                     }
                     
                     return `<div class="ballot-item ${classes.join(' ')}" data-tooltip="${tooltip.replace(/"/g, '&quot;')}">
@@ -813,7 +1003,7 @@
                 <div class="section">
                     <h3>Strategic Summary</h3>
                     <p>
-                        <strong>Best possible runoff outcome:</strong> Γ = ${formatGamma(optimalGroups[0]?.gamma)}
+                        <strong>Best possible outcome:</strong> Γ = ${formatGamma(optimalGroups[0]?.gamma)}
                     </p>
                     <p>
                         <strong>Optimal ballots:</strong> ${optimalBallots.length} total
@@ -821,12 +1011,19 @@
                     ? `(including ${sincereOptimal.length} sincere: ${sincereOptimal.map(b => formatBallot(b.ballot)).join(', ')})`
                     : '(⚠️ none are sincere!)'}
                     </p>
-                    ${sincereOptimal.length === 0 && optimalBallots.length > 0 ? `
+                    ${sincereOptimal.length === 0 && optimalBallots.length > 0 && !isApprovalMode ? `
                         <div class="warning">
                             <strong>Strategic Voting Required!</strong><br>
                             In this scenario, achieving your best outcome requires casting an insincere ballot in the first round.
                             This demonstrates a strategic incentive created by the <strong>top-2 runoff</strong> system—your first-round
                             ballot affects which two candidates face off in the runoff, which determines the final winner.
+                        </div>
+                    ` : ''}
+                    ${sincereOptimal.length === 0 && optimalBallots.length > 0 && isApprovalMode ? `
+                        <div class="warning">
+                            <strong>Strategic Voting Required!</strong><br>
+                            In this scenario, achieving your best outcome requires casting an insincere ballot.
+                            Even in ordinary approval voting, you may need to vote strategically depending on the vote totals.
                         </div>
                     ` : ''}
                     ${sincereOptimal.length > 0 ? `

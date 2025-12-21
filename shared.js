@@ -2,6 +2,49 @@
 // Based on Fishburn & Brams (1981) "Approval Voting, Condorcet's Principle, and Runoff Elections"
 
 /**
+ * Global setting for voting mode: 'runoff' or 'approval'
+ * When 'approval', we skip the runoff and just use first-round winners
+ */
+let votingMode = 'runoff';
+
+/**
+ * Configuration: whether abstaining (empty ballot) counts as a sincere strategy
+ */
+let abstentionIsSincere = false;
+
+/**
+ * Set the voting mode
+ */
+function setVotingMode(mode) {
+    votingMode = mode;
+
+    // Update button states directly for immediate feedback
+    const runoffBtn = document.getElementById('mode-runoff');
+    const approvalBtn = document.getElementById('mode-approval');
+    if (runoffBtn && approvalBtn) {
+        if (mode === 'approval') {
+            console.log('Setting mode to approval');
+            runoffBtn.classList.remove('active');
+            approvalBtn.classList.add('active');
+        } else {
+            console.log('Setting mode to runoff');
+            runoffBtn.classList.add('active');
+            approvalBtn.classList.remove('active');
+        }
+    }
+
+    // Dispatch event so pages can react
+    window.dispatchEvent(new CustomEvent('votingModeChanged', { detail: { mode } }));
+}
+
+/**
+ * Get the current voting mode
+ */
+function getVotingMode() {
+    return votingMode;
+}
+
+/**
  * Parse a preference string like "A>B>C" into an array
  */
 function parsePreference(prefString) {
@@ -49,14 +92,51 @@ function getRunoffWinner(c1, c2, matchups) {
 }
 
 /**
+ * Compute the ordinary approval voting outcome (no runoff)
+ * Simply returns the candidate(s) with the highest vote count
+ * @param {Object} baseVotes - Vote counts for each candidate (before focal voter)
+ * @param {Array} ballot - The ballot (array of candidates approved)
+ * @returns {Object} Outcome with Gamma (winners = highest vote-getters)
+ */
+function computeApprovalOutcome(baseVotes, ballot) {
+    // Add focal voter's vote
+    const votes = { ...baseVotes };
+    ballot.forEach(c => {
+        votes[c] = (votes[c] || 0) + 1;
+    });
+
+    // Sort candidates by votes
+    const sorted = Object.entries(votes).sort((a, b) => b[1] - a[1]);
+    const maxVotes = sorted[0][1];
+
+    // Winners are all candidates tied for the highest vote count
+    const winners = sorted.filter(([c, v]) => v === maxVotes).map(([c, v]) => c);
+
+    return {
+        A: winners,
+        B: [],
+        possibleRunoffs: [],
+        Gamma: winners,
+        votes: votes,
+        isApprovalMode: true
+    };
+}
+
+/**
  * Compute the runoff outcome for a given scenario and ballot
  * @param {Object} baseVotes - Vote counts for each candidate (before focal voter)
  * @param {Object} matchups - Head-to-head matchup results
  * @param {Array} ballot - The ballot (array of candidates approved)
  * @param {Array} candidates - All candidates
+ * @param {boolean} forceRunoff - If true, always use runoff mode regardless of global setting
  * @returns {Object} Outcome with Gamma (possible winners), runoff details, etc.
  */
-function computeRunoffOutcome(baseVotes, matchups, ballot, candidates) {
+function computeRunoffOutcome(baseVotes, matchups, ballot, candidates, forceRunoff = false) {
+    // If in approval mode (and not forced to runoff), use simple approval voting
+    if (!forceRunoff && votingMode === 'approval') {
+        return computeApprovalOutcome(baseVotes, ballot);
+    }
+
     // Add focal voter's vote
     const votes = { ...baseVotes };
     ballot.forEach(c => {
@@ -244,7 +324,7 @@ function formatGamma(gamma) {
  * (i.e., approves top k candidates for some k)
  */
 function isSincereBallot(ballot, preference) {
-    if (ballot.length === 0) return true; // Abstention is sincere
+    if (ballot.length === 0) return abstentionIsSincere; // Abstention sincerity is configurable
 
     // Find the lowest-ranked approved candidate
     let lowestApprovedRank = -1;
@@ -306,6 +386,7 @@ if (typeof module !== 'undefined' && module.exports) {
         generateAllBallots,
         getRunoffWinner,
         computeRunoffOutcome,
+        computeApprovalOutcome,
         compareOutcomes,
         arraysEqual,
         arraysEqualUnordered,
@@ -314,6 +395,9 @@ if (typeof module !== 'undefined' && module.exports) {
         isSincereBallot,
         getGammaKey,
         getOutcomeRank,
-        VOTE_TIERS
+        VOTE_TIERS,
+        setVotingMode,
+        getVotingMode,
+        abstentionIsSincere
     };
 }
