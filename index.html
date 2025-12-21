@@ -1024,9 +1024,9 @@
                         <div style="margin: 15px 0;">
                             <strong>Key Matchups:</strong>
                             <ul>
-                                <li>${scenario.y} beats ${scenario.x}: ${scenario.matchups[`${scenario.y}-${scenario.x}`] ? 'Yes' : 'No'}</li>
-                                <li>${scenario.y} beats ${scenario.z}: ${scenario.matchups[`${scenario.y}-${scenario.z}`] ? 'Yes' : 'No'}</li>
-                                <li>${scenario.x} beats ${scenario.z}: ${scenario.matchups[`${scenario.x}-${scenario.z}`] ? 'Yes' : 'No'}</li>
+                                <li>${scenario.matchups[`${scenario.y}-${scenario.x}`] ? `${scenario.y} beats ${scenario.x}` : `${scenario.x} beats ${scenario.y}`}</li>
+                                <li>${scenario.matchups[`${scenario.y}-${scenario.z}`] ? `${scenario.y} beats ${scenario.z}` : `${scenario.z} beats ${scenario.y}`}</li>
+                                <li>${scenario.matchups[`${scenario.x}-${scenario.z}`] ? `${scenario.x} beats ${scenario.z}` : `${scenario.z} beats ${scenario.x}`}</li>
                             </ul>
                         </div>
                         
