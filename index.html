@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Runoff Strategy Comparison</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+        
+        h1 {
+            color: #4a9eff;
+            border-bottom: 2px solid #4a9eff;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            color: #6ab7ff;
+            margin-top: 30px;
+        }
+        
+        .section {
+            background: #2a2a2a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #3a3a3a;
+        }
+        
+        .preference-input {
+            margin: 20px 0;
+        }
+        
+        .preference-input label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #6ab7ff;
+        }
+        
+        .preference-input input {
+            width: 300px;
+            padding: 8px;
+            font-size: 16px;
+            background: #1a1a1a;
+            border: 2px solid #4a4a4a;
+            border-radius: 4px;
+            color: #e0e0e0;
+        }
+        
+        .strategy-selection {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .strategy-box {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #4a4a4a;
+        }
+        
+        .strategy-box h3 {
+            color: #6ab7ff;
+            margin-top: 0;
+        }
+        
+        .ballot-option {
+            margin: 8px 0;
+            padding: 8px;
+            background: #2a2a2a;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .ballot-option:hover {
+            background: #3a3a3a;
+        }
+        
+        .ballot-option.selected {
+            border-color: #4a9eff;
+            background: #2a4a6a;
+        }
+        
+        .ballot-option input[type="checkbox"] {
+            margin-right: 8px;
+        }
+        
+        button {
+            background: #4a9eff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 5px;
+            transition: background 0.2s;
+        }
+        
+        button:hover {
+            background: #3a8eef;
+        }
+        
+        button:disabled {
+            background: #4a4a4a;
+            cursor: not-allowed;
+        }
+        
+        .results {
+            margin-top: 30px;
+        }
+        
+        .scenario {
+            background: #1a2a3a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #4a9eff;
+        }
+        
+        .scenario h3 {
+            color: #6ab7ff;
+            margin-top: 0;
+        }
+        
+        .vote-table {
+            margin: 15px 0;
+            border-collapse: collapse;
+            width: 100%;
+        }
+        
+        .vote-table th,
+        .vote-table td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #3a3a3a;
+        }
+        
+        .vote-table th {
+            background: #2a3a4a;
+            color: #6ab7ff;
+        }
+        
+        .outcome-better {
+            color: #4a9eff;
+            font-weight: 600;
+        }
+        
+        .outcome-worse {
+            color: #ff6b6b;
+        }
+        
+        .explanation {
+            background: #2a2a2a;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+            border-left: 3px solid #ffa500;
+        }
+        
+        .math-note {
+            font-style: italic;
+            color: #aaa;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+        
+        .warning {
+            background: #3a2a1a;
+            border-left: 3px solid #ffa500;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        
+        .construction-type {
+            display: inline-block;
+            background: #2a4a2a;
+            color: #6aff6a;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Runoff Voting Strategy Comparison Tool</h1>
+    <p style="font-size: 1.1em; color: #ccc; margin-bottom: 20px;">
+        Explore strategic voting in runoff approval systems using constructions from 
+        <strong>Fishburn & Brams (1981)</strong> "Approval Voting, Condorcet's Principle, and Runoff Elections"
+    </p>
+    
+    <div style="background: #2a3a3a; padding: 15px; margin: 20px 0; border-radius: 4px; border-left: 3px solid #4a9eff;">
+        <strong>What this tool does:</strong>
+        <p style="margin: 10px 0;">
+            This tool demonstrates <strong>Theorem 2</strong> from the paper: for non-dichotomous preferences, 
+            <em>every strategy is admissible</em> under runoff approval voting. That means for any two ballot strategies 
+            you choose, we can construct concrete election scenarios where each beats the other—neither dominates!
+        </p>
+        <p style="margin: 10px 0 0 0;">
+            The constructions use specific vote totals and pairwise matchups (H1-H4 from the proof) to show how 
+            runoff mechanics create complex strategic incentives.
+        </p>
+    </div>
+    
+    <div class="section">
+        <h2>Step 1: Define Your Preference</h2>
+        
+        <div style="background: #2a3a2a; padding: 15px; margin: 10px 0; border-radius: 4px; border-left: 3px solid #4a9eff;">
+            <strong>How to format your preference:</strong>
+            <ul style="margin: 10px 0; line-height: 1.6;">
+                <li><strong>Separate candidates with <code>></code></strong> to show preference order (most preferred → least preferred)</li>
+                <li><strong>At least 3 candidates required</strong> — the theorem applies to non-dichotomous preferences</li>
+                <li>Candidate names can contain letters, numbers, spaces, hyphens, and apostrophes</li>
+                <li>Spaces around <code>></code> are optional but allowed</li>
+            </ul>
+            
+            <strong>Examples:</strong>
+            <ul style="margin: 10px 0; line-height: 1.6;">
+                <li><code>Peltola>Begich>Palin</code> — Alaska 2022 RCV election</li>
+                <li><code>A>B>C</code> — simple abstract example</li>
+                <li><code>Alice>Bob>Charlie>Diana</code> — 4 candidates with names</li>
+                <li><code>Candidate 1 > Candidate 2 > Candidate 3</code> — spaces are fine</li>
+            </ul>
+            
+            <p style="margin-top: 10px; color: #ffaa55;"><strong>Note:</strong> With only 2 tiers (dichotomous preferences like A>B), 
+            certain strategies dominate and the interesting non-dominance results don't apply. You need at least 3 distinct preference levels 
+            to see the theorem in action.</p>
+        </div>
+        
+        <div class="preference-input">
+            <label for="preference">Enter preference order:</label>
+            <input type="text" id="preference" value="A>B>C" placeholder="e.g., Peltola>Begich>Palin" />
+            <button onclick="updatePreference()">Update</button>
+        </div>
+        <div id="prefDisplay"></div>
+    </div>
+    
+    <div class="section">
+        <h2>Step 2: Select Two Strategies to Compare</h2>
+        <div class="strategy-selection">
+            <div class="strategy-box">
+                <h3>Strategy S</h3>
+                <div id="strategyS"></div>
+            </div>
+            <div class="strategy-box">
+                <h3>Strategy T</h3>
+                <div id="strategyT"></div>
+            </div>
+        </div>
+        <button onclick="compareStrategies()" id="compareBtn">Compare Strategies</button>
+    </div>
+    
+    <div id="results" class="results"></div>
+    
+    <script>
+        let candidates = ['A', 'B', 'C'];
+        let preference = ['A', 'B', 'C'];
+        let selectedS = new Set();
+        let selectedT = new Set();
+        
+        function parsePreference(prefString) {
+            const parts = prefString.split('>').map(s => s.trim());
+            return parts;
+        }
+        
+        function updatePreference() {
+            const input = document.getElementById('preference').value;
+            preference = parsePreference(input);
+            candidates = [...preference];
+            
+            // Validation
+            if (candidates.length < 3) {
+                alert('⚠️ Please enter at least 3 candidates.\n\nThe theorem applies to non-dichotomous preferences (at least 3 tiers). With only 2 candidates, certain strategies will dominate.\n\nExample: A>B>C');
+                return;
+            }
+            
+            // Check for duplicates
+            const uniqueCandidates = new Set(candidates);
+            if (uniqueCandidates.size !== candidates.length) {
+                alert('⚠️ Each candidate must be unique.\n\nYou have duplicate candidates in your preference order. Please use distinct names.\n\nExample: Alice>Bob>Charlie');
+                return;
+            }
+            
+            // Check for empty candidates
+            if (candidates.some(c => !c || c.trim() === '')) {
+                alert('⚠️ Invalid format.\n\nMake sure each candidate name is non-empty and separated by ">".\n\nExample: A>B>C');
+                return;
+            }
+            
+            document.getElementById('prefDisplay').innerHTML = 
+                `<p><strong>Your preference:</strong> ${candidates.map((c, i) => 
+                    `${c} (${['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'][i]} choice)`
+                ).join(' > ')}</p>`;
+            
+            generateBallotOptions();
+            
+            // Show success message and clear previous results
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `
+                <div style="background: #2a4a2a; padding: 15px; margin: 20px 0; border-radius: 4px; border-left: 3px solid #6aff6a;">
+                    <strong>✓ Preference updated!</strong> 
+                    <p style="margin: 10px 0 0 0;">Ballot options have been regenerated. Select two different strategies below to compare.</p>
+                </div>
+            `;
+        }
+        
+        function generateBallotOptions() {
+            selectedS.clear();
+            selectedT.clear();
+            
+            const allBallots = generateAllBallots();
+            
+            document.getElementById('strategyS').innerHTML = allBallots
+                .map(ballot => {
+                    const id = `s-${ballot.join('')}`;
+                    const label = ballot.length === 0 ? '∅ (abstain)' : `{${ballot.join(',')}}`;
+                    return `<div class="ballot-option" onclick="toggleBallot('S', '${ballot.join(',')}')">
+                        <input type="radio" name="strategyS" id="${id}" />
+                        <label for="${id}">${label}</label>
+                    </div>`;
+                }).join('');
+                
+            document.getElementById('strategyT').innerHTML = allBallots
+                .map(ballot => {
+                    const id = `t-${ballot.join('')}`;
+                    const label = ballot.length === 0 ? '∅ (abstain)' : `{${ballot.join(',')}}`;
+                    return `<div class="ballot-option" onclick="toggleBallot('T', '${ballot.join(',')}')">
+                        <input type="radio" name="strategyT" id="${id}" />
+                        <label for="${id}">${label}</label>
+                    </div>`;
+                }).join('');
+        }
+        
+        function generateAllBallots() {
+            const ballots = [[]]; // Start with abstention
+            const n = candidates.length;
+            
+            // Generate all non-empty subsets EXCEPT the full set (which equals abstention)
+            for (let i = 1; i < Math.pow(2, n) - 1; i++) { // Note: -1 to exclude full set
+                const ballot = [];
+                for (let j = 0; j < n; j++) {
+                    if (i & (1 << j)) {
+                        ballot.push(candidates[j]);
+                    }
+                }
+                ballots.push(ballot);
+            }
+            
+            return ballots;
+        }
+        
+        function toggleBallot(strategy, ballotStr) {
+            const ballot = ballotStr ? ballotStr.split(',') : [];
+            
+            if (strategy === 'S') {
+                selectedS.clear();
+                ballot.forEach(c => selectedS.add(c));
+                
+                // Update visual selection
+                document.querySelectorAll('#strategyS .ballot-option').forEach(el => {
+                    el.classList.remove('selected');
+                });
+                event.currentTarget.classList.add('selected');
+            } else {
+                selectedT.clear();
+                ballot.forEach(c => selectedT.add(c));
+                
+                document.querySelectorAll('#strategyT .ballot-option').forEach(el => {
+                    el.classList.remove('selected');
+                });
+                event.currentTarget.classList.add('selected');
+            }
+        }
+        
+        function compareStrategies() {
+            if (selectedS.size === 0 && selectedT.size === 0) {
+                alert('Please select two different strategies');
+                return;
+            }
+            
+            const S = Array.from(selectedS);
+            const T = Array.from(selectedT);
+            
+            if (arraysEqual(S, T)) {
+                alert('Please select two different strategies');
+                return;
+            }
+            
+            // CRITICAL REDUCTION from Theorem 2 proof:
+            // "Since S dom₂ T for P if and only if S \ T dom₂ T \ S for P,
+            //  we shall suppose that S ∩ T = ∅"
+            
+            const S_only = S.filter(c => !T.includes(c));  // S \ T
+            const T_only = T.filter(c => !S.includes(c));  // T \ S
+            const common = S.filter(c => T.includes(c));   // S ∩ T
+            
+            // Compare the DIFFERENCES only
+            const results = constructContingencies(S_only, T_only);
+            
+            // Display results, explaining the reduction
+            displayResults(S, T, S_only, T_only, common, results);
+        }
+        
+        function arraysEqual(a, b) {
+            if (a.length !== b.length) return false;
+            const sortedA = [...a].sort();
+            const sortedB = [...b].sort();
+            return sortedA.every((val, i) => val === sortedB[i]);
+        }
+        
+        function constructContingencies(S, T) {
+            // Following Theorem 2 proof
+            // We need to construct two contingencies:
+            // 1. Where S beats T
+            // 2. Where T beats S
+            
+            const S_only = S.filter(c => !T.includes(c));
+            const T_only = T.filter(c => !S.includes(c));
+            
+            const contingencies = [];
+            
+            // Try to construct scenario where S beats T
+            const scenarioSbeatsT = constructScenarioFavoring(S, T, S_only, T_only, 'S');
+            if (scenarioSbeatsT) {
+                contingencies.push(scenarioSbeatsT);
+            }
+            
+            // Try to construct scenario where T beats S
+            const scenarioTbeatsS = constructScenarioFavoring(T, S, T_only, S_only, 'T');
+            if (scenarioTbeatsS) {
+                contingencies.push(scenarioTbeatsS);
+            }
+            
+            return contingencies;
+        }
+        
+        function constructScenarioFavoring(favored, other, favored_only, other_only, favoredName) {
+            // Try different construction recipes from the paper
+            // Note: H3 and H4 naturally handle abstention cases (when favored or other is ∅)
+            
+            // Recipe 1: Based on H1 (page 105)
+            // If ∃x,y,z: xPy, y ∉ favored, z ∈ favored
+            for (let i = 0; i < candidates.length - 1; i++) {
+                const x = candidates[i];
+                for (let j = i + 1; j < candidates.length; j++) {
+                    const y = candidates[j];
+                    for (const z of candidates) {
+                        if (z !== x && z !== y) {
+                            if (!favored.includes(y) && favored.includes(z)) {
+                                // Found candidates for H1 construction
+                                const result = constructH1(x, y, z, favored, other, favoredName);
+                                if (result && result.favoredIsBetter) {
+                                    return result;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Recipe 2: Based on H2
+            // If ∃x,y,z: xPy, x ∈ favored, z ∉ favored
+            for (let i = 0; i < candidates.length - 1; i++) {
+                const x = candidates[i];
+                for (let j = i + 1; j < candidates.length; j++) {
+                    const y = candidates[j];
+                    for (const z of candidates) {
+                        if (z !== x && z !== y) {
+                            if (favored.includes(x) && !favored.includes(z)) {
+                                const result = constructH2(x, y, z, favored, other, favoredName);
+                                if (result && result.favoredIsBetter) {
+                                    return result;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Recipe 3: Based on H3
+            // If ∃x,y,z: xPy, y ∈ other, z ∉ other
+            // NOTE: H3 naturally handles abstention when other=∅ (always false, so tries other constructions)
+            //       and when favored contains top candidates vs ∅
+            for (let i = 0; i < candidates.length - 1; i++) {
+                const x = candidates[i];
+                for (let j = i + 1; j < candidates.length; j++) {
+                    const y = candidates[j];
+                    for (const z of candidates) {
+                        if (z !== x && z !== y) {
+                            if (other.includes(y) && !other.includes(z)) {
+                                const result = constructH3(x, y, z, favored, other, favoredName);
+                                if (result && result.favoredIsBetter) {
+                                    return result;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Recipe 4: Based on H4
+            // If ∃x,y,z: xPy, x ∉ other, z ∈ other
+            // NOTE: H4 naturally handles showing ∅ beats S when S contains low-preference candidates
+            for (let i = 0; i < candidates.length - 1; i++) {
+                const x = candidates[i];
+                for (let j = i + 1; j < candidates.length; j++) {
+                    const y = candidates[j];
+                    for (const z of candidates) {
+                        if (z !== x && z !== y) {
+                            if (!other.includes(x) && other.includes(z)) {
+                                const result = constructH4(x, y, z, favored, other, favoredName);
+                                if (result && result.favoredIsBetter) {
+                                    return result;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            return null;
+        }
+        
+        function constructH1(x, y, z, favored, other, favoredName) {
+            // H1 construction from paper:
+            // Votes: x and y tied at n, z at n-1
+            // Matchups: y>x, y>z, x>z
+            
+            const n = 100;
+            const votes = {};
+            candidates.forEach(c => votes[c] = 10); // baseline
+            votes[x] = n;
+            votes[y] = n;
+            votes[z] = n - 1;
+            
+            const matchups = {};
+            candidates.forEach(c1 => {
+                candidates.forEach(c2 => {
+                    if (c1 !== c2) {
+                        matchups[`${c1}-${c2}`] = false;
+                    }
+                });
+            });
+            
+            // Set specific matchups for H1
+            matchups[`${y}-${x}`] = true;
+            matchups[`${y}-${z}`] = true;
+            matchups[`${x}-${z}`] = true;
+            
+            const outcomes = computeOutcomes(votes, matchups, favored, other);
+            
+            // Check if favored actually beats other
+            const comparison = compareOutcomes(outcomes.favored, outcomes.other, preference);
+            
+            if (comparison <= 0) {
+                // Favored is not strictly better, construction failed
+                return null;
+            }
+            
+            return {
+                type: 'H1',
+                description: `Candidates ${x} and ${y} tied at ${n} votes, ${z} at ${n-1}`,
+                x, y, z,
+                votes,
+                matchups,
+                outcomes,
+                favoredName,
+                favoredIsBetter: true,
+                explanation: `Construction H1: When voters use ${formatBallot(favored)}, Γ(>) = {${outcomes.favored.Gamma.join(',')}}. When using ${formatBallot(other)}, Γ(>) = {${outcomes.other.Gamma.join(',')}}. By Axiom P2, ${favoredName} is preferred.`
+            };
+        }
+        
+        function constructH2(x, y, z, favored, other, favoredName) {
+            // H2 construction:
+            // Votes: y at n, x and z at n-1
+            // Matchups: x>y, x>z, y>z
+            
+            const n = 100;
+            const votes = {};
+            candidates.forEach(c => votes[c] = 10);
+            votes[y] = n;
+            votes[x] = n - 1;
+            votes[z] = n - 1;
+            
+            const matchups = {};
+            candidates.forEach(c1 => {
+                candidates.forEach(c2 => {
+                    if (c1 !== c2) {
+                        matchups[`${c1}-${c2}`] = false;
+                    }
+                });
+            });
+            
+            matchups[`${x}-${y}`] = true;
+            matchups[`${x}-${z}`] = true;
+            matchups[`${y}-${z}`] = true;
+            
+            const outcomes = computeOutcomes(votes, matchups, favored, other);
+            const comparison = compareOutcomes(outcomes.favored, outcomes.other, preference);
+            
+            if (comparison <= 0) {
+                return null;
+            }
+            
+            return {
+                type: 'H2',
+                description: `Candidate ${y} at ${n} votes, ${x} and ${z} at ${n-1}`,
+                x, y, z,
+                votes,
+                matchups,
+                outcomes,
+                favoredName,
+                favoredIsBetter: true,
+                explanation: `Construction H2: Γ(>) for ${favoredName} is {${outcomes.favored.Gamma.join(',')}}, for other is {${outcomes.other.Gamma.join(',')}}.`
+            };
+        }
+        
+        function constructH3(x, y, z, favored, other, favoredName) {
+            // H3 construction:
+            // Votes: x and z tied at n, y at n-1
+            // Matchups: x>z, y>x, y>z
+            
+            const n = 100;
+            const votes = {};
+            candidates.forEach(c => votes[c] = 10);
+            votes[x] = n;
+            votes[z] = n;
+            votes[y] = n - 1;
+            
+            const matchups = {};
+            candidates.forEach(c1 => {
+                candidates.forEach(c2 => {
+                    if (c1 !== c2) {
+                        matchups[`${c1}-${c2}`] = false;
+                    }
+                });
+            });
+            
+            matchups[`${x}-${z}`] = true;
+            matchups[`${y}-${x}`] = true;
+            matchups[`${y}-${z}`] = true;
+            
+            const outcomes = computeOutcomes(votes, matchups, favored, other);
+            const comparison = compareOutcomes(outcomes.favored, outcomes.other, preference);
+            
+            if (comparison <= 0) {
+                return null;
+            }
+            
+            return {
+                type: 'H3',
+                description: `Candidates ${x} and ${z} tied at ${n}, ${y} at ${n-1}`,
+                x, y, z,
+                votes,
+                matchups,
+                outcomes,
+                favoredName,
+                favoredIsBetter: true,
+                explanation: `Construction H3: Shows how runoff mechanics favor ${favoredName}.`
+            };
+        }
+        
+        function constructH4(x, y, z, favored, other, favoredName) {
+            // H4 construction:
+            // Votes: x and y tied at n, z at n-1
+            // Matchups: x>y, x>z, y>z
+            // This construction is particularly useful for showing ∅ beats S={A} when A is low-preference
+            
+            const n = 100;
+            const votes = {};
+            candidates.forEach(c => votes[c] = 10);
+            votes[x] = n;
+            votes[y] = n;
+            votes[z] = n - 1;
+            
+            const matchups = {};
+            candidates.forEach(c1 => {
+                candidates.forEach(c2 => {
+                    if (c1 !== c2) {
+                        matchups[`${c1}-${c2}`] = false;
+                    }
+                });
+            });
+            
+            matchups[`${x}-${y}`] = true;
+            matchups[`${x}-${z}`] = true;
+            matchups[`${y}-${z}`] = true;
+            
+            const outcomes = computeOutcomes(votes, matchups, favored, other);
+            const comparison = compareOutcomes(outcomes.favored, outcomes.other, preference);
+            
+            if (comparison <= 0) {
+                return null;
+            }
+            
+            return {
+                type: 'H4',
+                description: `Candidates ${x} and ${y} tied at ${n}, ${z} at ${n-1}`,
+                x, y, z,
+                votes,
+                matchups,
+                outcomes,
+                favoredName,
+                favoredIsBetter: true,
+                explanation: `Construction H4: Shows how runoff mechanics favor ${favoredName}.`
+            };
+        }
+        
+        function computeOutcomes(votes, matchups, strategy1, strategy2) {
+            // Compute what happens with each strategy
+            const outcome1 = computeRunoffOutcome(votes, matchups, strategy1);
+            const outcome2 = computeRunoffOutcome(votes, matchups, strategy2);
+            
+            return {
+                favored: outcome1,
+                other: outcome2
+            };
+        }
+        
+        function computeRunoffOutcome(baseVotes, matchups, strategy) {
+            // Add focal voter's vote
+            const votes = {...baseVotes};
+            strategy.forEach(c => {
+                votes[c] = (votes[c] || 0) + 1;
+            });
+            
+            // Sort candidates by votes
+            const sorted = Object.entries(votes).sort((a, b) => b[1] - a[1]);
+            
+            // Determine who's guaranteed in runoff (set A) and who has a chance (set B)
+            const maxVotes = sorted[0][1];
+            const secondMaxVotes = sorted.find(([c, v]) => v < maxVotes)?.[1] || 0;
+            
+            const A = []; // Guaranteed in runoff
+            const B = []; // Has a chance
+            
+            // Count candidates at each vote level
+            const topTier = sorted.filter(([c, v]) => v === maxVotes).map(([c, v]) => c);
+            const secondTier = sorted.filter(([c, v]) => v === secondMaxVotes).map(([c, v]) => c);
+            
+            if (topTier.length >= 2) {
+                // Multiple candidates tied for first
+                // All have a chance, none guaranteed
+                B.push(...topTier);
+            } else if (topTier.length === 1) {
+                // One candidate in first
+                A.push(topTier[0]);
+                if (secondTier.length >= 1) {
+                    // One or more tied for second
+                    B.push(...secondTier);
+                }
+            }
+            
+            // Generate all possible runoff pairings
+            const possibleRunoffs = [];
+            
+            if (A.length === 2) {
+                // Two guaranteed
+                possibleRunoffs.push([A[0], A[1]]);
+            } else if (A.length === 1) {
+                // One guaranteed, need to pair with each from B
+                B.forEach(b => {
+                    possibleRunoffs.push([A[0], b]);
+                });
+            } else if (A.length === 0 && B.length >= 2) {
+                // All from B, need all pairings
+                for (let i = 0; i < B.length; i++) {
+                    for (let j = i + 1; j < B.length; j++) {
+                        possibleRunoffs.push([B[i], B[j]]);
+                    }
+                }
+            }
+            
+            // Compute Γ(>) = set of all candidates who could win
+            const possibleWinners = new Set();
+            const runoffDetails = [];
+            
+            possibleRunoffs.forEach(([c1, c2]) => {
+                const winner = getRunoffWinner(c1, c2, matchups);
+                possibleWinners.add(winner);
+                runoffDetails.push({
+                    pair: [c1, c2],
+                    winner: winner
+                });
+            });
+            
+            return {
+                A: A,
+                B: B,
+                possibleRunoffs: runoffDetails,
+                Gamma: Array.from(possibleWinners), // Γ(>) - set of possible winners
+                votes: votes
+            };
+        }
+        
+        function getRunoffWinner(c1, c2, matchups) {
+            // Determine who wins in a runoff between c1 and c2
+            const key1 = `${c1}-${c2}`;
+            const key2 = `${c2}-${c1}`;
+            
+            if (matchups[key1]) {
+                return c1;
+            } else if (matchups[key2]) {
+                return c2;
+            } else {
+                // Tie or undefined - assume c1 wins (arbitrary)
+                return c1;
+            }
+        }
+        
+        function compareOutcomes(outcome1, outcome2, preference) {
+            // Compare two outcomes using Axioms P2 and R2
+            // Returns: 1 if outcome1 better, -1 if outcome2 better, 0 if unclear/equal
+            
+            const Gamma1 = outcome1.Gamma;
+            const Gamma2 = outcome2.Gamma;
+            
+            // If Gamma sets are equal, outcomes are equivalent
+            if (arraysEqualUnordered(Gamma1, Gamma2)) {
+                return 0;
+            }
+            
+            // Axiom P2: If Γ₁(>) = {x} and Γ₂(>) = {x,y}
+            if (Gamma1.length === 1 && Gamma2.length === 2) {
+                const x = Gamma1[0];
+                if (Gamma2.includes(x)) {
+                    const y = Gamma2.find(c => c !== x);
+                    // If xPy (x preferred to y), then outcome1 P outcome2
+                    const xIndex = preference.indexOf(x);
+                    const yIndex = preference.indexOf(y);
+                    if (xIndex < yIndex) {
+                        return 1; // outcome1 better (certain good beats uncertain)
+                    } else {
+                        return -1; // outcome2 better (chance at better beats certain worse)
+                    }
+                }
+            }
+            
+            // Symmetric case
+            if (Gamma2.length === 1 && Gamma1.length === 2) {
+                const x = Gamma2[0];
+                if (Gamma1.includes(x)) {
+                    const y = Gamma1.find(c => c !== x);
+                    const xIndex = preference.indexOf(x);
+                    const yIndex = preference.indexOf(y);
+                    if (xIndex < yIndex) {
+                        return -1; // outcome2 better
+                    } else {
+                        return 1; // outcome1 better
+                    }
+                }
+            }
+            
+            // General case: compare best possible outcomes
+            // outcome1 is better if its best possible winner is better than outcome2's best
+            const best1 = Math.min(...Gamma1.map(c => preference.indexOf(c)));
+            const best2 = Math.min(...Gamma2.map(c => preference.indexOf(c)));
+            
+            if (best1 < best2) {
+                return 1; // outcome1 has better best-case
+            } else if (best2 < best1) {
+                return -1; // outcome2 has better best-case
+            }
+            
+            // If best cases equal, compare worst cases
+            const worst1 = Math.max(...Gamma1.map(c => preference.indexOf(c)));
+            const worst2 = Math.max(...Gamma2.map(c => preference.indexOf(c)));
+            
+            if (worst1 < worst2) {
+                return 1; // outcome1 has better worst-case
+            } else if (worst2 < worst1) {
+                return -1; // outcome2 has better worst-case
+            }
+            
+            return 0; // Unable to determine
+        }
+        
+        function arraysEqualUnordered(a, b) {
+            if (a.length !== b.length) return false;
+            const sortedA = [...a].sort();
+            const sortedB = [...b].sort();
+            return sortedA.every((val, i) => val === sortedB[i]);
+        }
+        
+        function formatBallot(ballot) {
+            return ballot.length === 0 ? '∅' : `{${ballot.join(',')}}`;
+        }
+        
+        function formatOutcome(outcome) {
+            if (!outcome || !outcome.Gamma) {
+                return 'undefined';
+            }
+            if (outcome.Gamma.length === 1) {
+                return outcome.Gamma[0];
+            } else {
+                return `{${outcome.Gamma.join(',')}}`;
+            }
+        }
+        
+        function displayResults(S, T, S_only, T_only, common, contingencies) {
+            const resultsDiv = document.getElementById('results');
+            
+            if (contingencies.length === 0) {
+                resultsDiv.innerHTML = `
+                    <div class="warning">
+                        <strong>Could not construct contingencies.</strong>
+                        This might happen if the strategies are too similar or if the preference is dichotomous.
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = `<h2>Comparison Results</h2>
+                <p><strong>Strategy S:</strong> ${formatBallot(S)}</p>
+                <p><strong>Strategy T:</strong> ${formatBallot(T)}</p>`;
+            
+            // Show the reduction if there are common elements
+            if (common.length > 0) {
+                html += `
+                    <div class="explanation">
+                        <strong>Key Insight from Theorem 2:</strong><br/>
+                        Both strategies vote for ${formatBallot(common)} in common. These shared votes affect 
+                        both outcomes identically, so they don't matter for comparing the strategies.<br/><br/>
+                        
+                        <strong>Reduction:</strong> We only need to compare the <em>differences</em>:<br/>
+                        • S votes for ${formatBallot(S_only)} (that T doesn't)<br/>
+                        • T votes for ${formatBallot(T_only)} (that S doesn't)<br/><br/>
+                        
+                        The proof states: "<em>S dom₂ T for P if and only if S \\ T dom₂ T \\ S for P</em>"<br/>
+                        So we construct contingencies comparing ${formatBallot(S_only)} vs ${formatBallot(T_only)}.
+                    </div>
+                `;
+            }
+            
+            html += `<p class="math-note">Following the proof of Theorem 2, we construct contingencies showing neither strategy dominates the other.</p>`;
+            
+            contingencies.forEach((scenario, idx) => {
+                const isFavoringS = scenario.favoredName === 'S';
+                const favoredBallot = isFavoringS ? S_only : T_only;
+                const otherBallot = isFavoringS ? T_only : S_only;
+                const favoredOriginal = isFavoringS ? S : T;
+                const otherOriginal = isFavoringS ? T : S;
+                
+                const favoredOutcome = scenario.outcomes.favored;
+                const otherOutcome = scenario.outcomes.other;
+                
+                // Adjust votes to "undo" the reduction for display
+                const adjustedVotes = {...scenario.votes};
+                common.forEach(c => {
+                    adjustedVotes[c] = (adjustedVotes[c] || 0) - 1;
+                });
+                
+                html += `
+                    <div class="scenario">
+                        <span class="construction-type">${scenario.type} Construction</span>
+                        <h3>Scenario ${idx + 1}: Where ${formatBallot(favoredOriginal)} beats ${formatBallot(otherOriginal)}</h3>
+                        
+                        <p><strong>Setup:</strong> ${scenario.description}</p>
+                        
+                        ${common.length > 0 ? `
+                            <div style="background: #2a3a2a; padding: 10px; margin: 10px 0; border-radius: 4px; border-left: 3px solid #4a9eff;">
+                                <strong>Reduction Applied:</strong> We constructed the scenario comparing ${formatBallot(favoredBallot)} vs ${formatBallot(otherBallot)} 
+                                (the differences), then adjusted vote totals by subtracting 1 from ${formatBallot(common)}. 
+                                This gives the equivalent scenario where both strategies include ${formatBallot(common)}. 
+                                The outcomes are identical because both give the same boost to those candidates.
+                            </div>
+                        ` : ''}
+                        
+                        <table class="vote-table">
+                            <tr>
+                                <th>Candidate</th>
+                                <th>Votes (before focal voter)</th>
+                                <th>With ${formatBallot(favoredOriginal)}</th>
+                                <th>With ${formatBallot(otherOriginal)}</th>
+                            </tr>
+                            ${candidates.map(c => {
+                                const base = adjustedVotes[c];
+                                const withFavored = base + (favoredOriginal.includes(c) ? 1 : 0);
+                                const withOther = base + (otherOriginal.includes(c) ? 1 : 0);
+                                return `<tr>
+                                    <td><strong>${c}</strong></td>
+                                    <td>${base}</td>
+                                    <td>${withFavored}</td>
+                                    <td>${withOther}</td>
+                                </tr>`;
+                            }).join('')}
+                        </table>
+                        
+                        <div style="margin: 15px 0;">
+                            <strong>Key Matchups:</strong>
+                            <ul>
+                                <li>${scenario.y} beats ${scenario.x}: ${scenario.matchups[`${scenario.y}-${scenario.x}`] ? 'Yes' : 'No'}</li>
+                                <li>${scenario.y} beats ${scenario.z}: ${scenario.matchups[`${scenario.y}-${scenario.z}`] ? 'Yes' : 'No'}</li>
+                                <li>${scenario.x} beats ${scenario.z}: ${scenario.matchups[`${scenario.x}-${scenario.z}`] ? 'Yes' : 'No'}</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="explanation">
+                            <strong>Outcome Analysis:</strong><br/><br/>
+                            
+                            <strong>With ${formatBallot(favoredOriginal)}:</strong><br/>
+                            • Vote totals: ${candidates.map(c => {
+                                const v = adjustedVotes[c] + (favoredOriginal.includes(c) ? 1 : 0);
+                                return `${c}:${v}`;
+                            }).join(', ')}<br/>
+                            • Guaranteed in runoff (A): {${favoredOutcome.A.join(',')}}<br/>
+                            • Possible for runoff (B): {${favoredOutcome.B.join(',')}}<br/>
+                            • Possible runoffs: ${favoredOutcome.possibleRunoffs.map(r => 
+                                `${r.pair[0]} vs ${r.pair[1]} → <strong>${r.winner}</strong>`
+                            ).join(', ')}<br/>
+                            • <strong>Γ(>) = <span class="outcome-better">{${favoredOutcome.Gamma.join(',')}}</span></strong> (possible winners)<br/><br/>
+                            
+                            <strong>With ${formatBallot(otherOriginal)}:</strong><br/>
+                            • Vote totals: ${candidates.map(c => {
+                                const v = adjustedVotes[c] + (otherOriginal.includes(c) ? 1 : 0);
+                                return `${c}:${v}`;
+                            }).join(', ')}<br/>
+                            • Guaranteed in runoff (A): {${otherOutcome.A.join(',')}}<br/>
+                            • Possible for runoff (B): {${otherOutcome.B.join(',')}}<br/>
+                            • Possible runoffs: ${otherOutcome.possibleRunoffs.map(r => 
+                                `${r.pair[0]} vs ${r.pair[1]} → <strong>${r.winner}</strong>`
+                            ).join(', ')}<br/>
+                            • <strong>Γ(>) = <span class="outcome-worse">{${otherOutcome.Gamma.join(',')}}</span></strong> (possible winners)<br/><br/>
+                            
+                            Given your preference ${preference.join('>')}, you prefer Γ(>) = {${favoredOutcome.Gamma.join(',')}} over 
+                            Γ(>) = {${otherOutcome.Gamma.join(',')}}, so ${formatBallot(favoredOriginal)} is better than ${formatBallot(otherOriginal)} in this scenario.
+                        </div>
+                        
+                        <p class="math-note">${scenario.explanation}</p>
+                    </div>
+                `;
+            });
+            
+            if (contingencies.length === 2) {
+                html += `
+                    <div class="section">
+                        <h3>Conclusion</h3>
+                        <p>We have constructed two scenarios:</p>
+                        <ol>
+                            <li>One where ${formatBallot(S)} performs better than ${formatBallot(T)}</li>
+                            <li>One where ${formatBallot(T)} performs better than ${formatBallot(S)}</li>
+                        </ol>
+                        <p><strong>Therefore, neither strategy dominates the other.</strong> This demonstrates that both strategies 
+                        are admissible under runoff approval voting for your preference ${candidates.join('>')}.</p>
+                        
+                        ${common.length > 0 ? `
+                            <p class="math-note">
+                                <strong>Why the reduction works:</strong> The candidates both strategies vote for in common 
+                                (${formatBallot(common)}) get the same boost in both scenarios. They appear in the same runoffs 
+                                and have the same outcomes. Only the <em>differential</em> votes (${formatBallot(S_only)} vs ${formatBallot(T_only)}) 
+                                affect which strategy is better.
+                            </p>
+                        ` : ''}
+                        
+                        <p class="math-note">This follows directly from Theorem 2 (Runoff dominance) in the Fishburn-Brams paper.</p>
+                    </div>
+                `;
+            }
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        // Initialize
+        document.getElementById('prefDisplay').innerHTML = 
+            `<p><strong>Your preference:</strong> ${candidates.map((c, i) => 
+                `${c} (${['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'][i]} choice)`
+            ).join(' > ')}</p>`;
+        generateBallotOptions();
+    </script>
+</body>
+</html>
