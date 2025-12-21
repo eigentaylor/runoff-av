@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scenario Analyzer - AV Runoff</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+
+        /* Navigation */
+        nav {
+            background: #2a2a2a;
+            padding: 15px 20px;
+            margin: -20px -20px 20px -20px;
+            border-bottom: 2px solid #4a9eff;
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+
+        nav a {
+            color: #6ab7ff;
+            text-decoration: none;
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        nav a:hover {
+            background: #3a3a3a;
+            color: #4a9eff;
+        }
+
+        nav a.active {
+            background: #4a9eff;
+            color: white;
+        }
+
+        nav .nav-title {
+            color: #4a9eff;
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-right: auto;
+        }
+
+        h1 {
+            color: #4a9eff;
+            border-bottom: 2px solid #4a9eff;
+            padding-bottom: 10px;
+        }
+
+        h2 {
+            color: #6ab7ff;
+            margin-top: 30px;
+        }
+
+        h3 {
+            color: #6ab7ff;
+        }
+
+        .section {
+            background: #2a2a2a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #3a3a3a;
+        }
+
+        .preference-input {
+            margin: 20px 0;
+        }
+
+        .preference-input label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #6ab7ff;
+        }
+
+        .preference-input input {
+            width: 300px;
+            padding: 8px;
+            font-size: 16px;
+            background: #1a1a1a;
+            border: 2px solid #4a4a4a;
+            border-radius: 4px;
+            color: #e0e0e0;
+        }
+
+        button {
+            background: #4a9eff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 5px;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #3a8eef;
+        }
+
+        button:disabled {
+            background: #4a4a4a;
+            cursor: not-allowed;
+        }
+
+        .candidate-config {
+            display: grid;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .candidate-row {
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            align-items: center;
+            gap: 15px;
+            background: #1a1a1a;
+            padding: 12px 15px;
+            border-radius: 6px;
+            border: 1px solid #3a3a3a;
+        }
+
+        .candidate-name {
+            font-weight: 600;
+            color: #6ab7ff;
+        }
+
+        .tier-options {
+            display: flex;
+            gap: 10px;
+        }
+
+        .tier-option {
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 2px solid #4a4a4a;
+            background: #2a2a2a;
+            color: #e0e0e0;
+            transition: all 0.2s;
+        }
+
+        .tier-option:hover {
+            background: #3a3a3a;
+        }
+
+        .tier-option.selected {
+            border-color: #4a9eff;
+            background: #2a4a6a;
+        }
+
+        .tier-option.frontrunner.selected {
+            border-color: #6aff6a;
+            background: #2a4a2a;
+        }
+
+        .tier-option.viable.selected {
+            border-color: #ffaa55;
+            background: #3a3a2a;
+        }
+
+        .tier-option.nonviable.selected {
+            border-color: #ff6b6b;
+            background: #3a2a2a;
+        }
+
+        .matchup-config {
+            margin: 20px 0;
+        }
+
+        .matchup-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 10px 0;
+            padding: 10px 15px;
+            background: #1a1a1a;
+            border-radius: 6px;
+            border: 1px solid #3a3a3a;
+        }
+
+        .matchup-label {
+            min-width: 200px;
+            font-weight: 500;
+        }
+
+        .matchup-options {
+            display: flex;
+            gap: 10px;
+        }
+
+        .matchup-option {
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 2px solid #4a4a4a;
+            background: #2a2a2a;
+            color: #e0e0e0;
+            transition: all 0.2s;
+        }
+
+        .matchup-option:hover {
+            background: #3a3a3a;
+        }
+
+        .matchup-option.selected {
+            border-color: #4a9eff;
+            background: #2a4a6a;
+        }
+
+        .results {
+            margin-top: 30px;
+        }
+
+        .outcome-group {
+            background: #1a2a3a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #4a9eff;
+        }
+
+        .outcome-group.optimal {
+            border-left-color: #6aff6a;
+        }
+
+        .outcome-group h3 {
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .outcome-rank {
+            font-size: 0.8em;
+            padding: 4px 10px;
+            border-radius: 4px;
+            background: #2a4a6a;
+        }
+
+        .outcome-rank.rank-1 {
+            background: #2a4a2a;
+            color: #6aff6a;
+        }
+
+        .ballot-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .ballot-item {
+            padding: 8px 14px;
+            border-radius: 4px;
+            background: #2a2a2a;
+            border: 2px solid #3a3a3a;
+            font-family: monospace;
+            font-size: 0.95em;
+        }
+
+        .ballot-item.sincere {
+            border-color: #6aff6a;
+            background: #2a3a2a;
+        }
+
+        .ballot-item.optimal {
+            border-color: #ffd700;
+            background: #3a3a2a;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+
+        .ballot-item.sincere.optimal {
+            border-color: #6aff6a;
+            background: #2a4a2a;
+            box-shadow: 0 0 10px rgba(106, 255, 106, 0.3);
+        }
+
+        .legend {
+            display: flex;
+            gap: 20px;
+            margin: 20px 0;
+            padding: 15px;
+            background: #2a2a2a;
+            border-radius: 8px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-swatch {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 2px solid;
+        }
+
+        .legend-swatch.sincere {
+            border-color: #6aff6a;
+            background: #2a3a2a;
+        }
+
+        .legend-swatch.optimal {
+            border-color: #ffd700;
+            background: #3a3a2a;
+        }
+
+        .legend-swatch.sincere-optimal {
+            border-color: #6aff6a;
+            background: #2a4a2a;
+            box-shadow: 0 0 5px rgba(106, 255, 106, 0.3);
+        }
+
+        .legend-swatch.insincere {
+            border-color: #3a3a3a;
+            background: #2a2a2a;
+        }
+
+        .info-box {
+            background: #2a3a3a;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+            border-left: 3px solid #4a9eff;
+        }
+
+        .warning {
+            background: #3a2a1a;
+            border-left: 3px solid #ffa500;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+
+        .vote-summary {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            border: 1px solid #3a3a3a;
+        }
+
+        .vote-summary table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .vote-summary th,
+        .vote-summary td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid #3a3a3a;
+        }
+
+        .vote-summary th {
+            background: #2a3a4a;
+            color: #6ab7ff;
+        }
+
+        .matchup-summary {
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #aaa;
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <span class="nav-title">AV Runoff Tools</span>
+        <a href="index.html">Strategy Comparison</a>
+        <a href="analyzer.html" class="active">Scenario Analyzer</a>
+    </nav>
+
+    <h1>Scenario Analyzer</h1>
+    <p style="font-size: 1.1em; color: #ccc; margin-bottom: 20px;">
+        Define a specific election scenario and see which approval ballots lead to which outcomes.
+        Find your optimal voting strategy given your preferences and beliefs about the election.
+    </p>
+
+    <div class="section">
+        <h2>Step 1: Enter Your Preference Order</h2>
+        <div class="info-box">
+            <strong>Format:</strong> List candidates from most to least preferred, separated by <code>&gt;</code><br>
+            <strong>Example:</strong> <code>Peltola&gt;Begich&gt;Palin</code>
+        </div>
+        <div class="preference-input">
+            <label for="preference">Preference order:</label>
+            <input type="text" id="preference" value="Peltola>Begich>Palin" placeholder="e.g., Peltola>Begich>Palin" />
+            <button onclick="setupScenario()">Set Up Scenario</button>
+        </div>
+    </div>
+
+    <div id="scenarioConfig" class="section" style="display: none;">
+        <h2>Step 2: Configure the Scenario</h2>
+        
+        <h3>Candidate Viability</h3>
+        <div class="info-box">
+            Assign each candidate their perceived viability in the first round:
+            <ul style="margin: 10px 0;">
+                <li><strong>Frontrunner</strong> (100 votes) — Leading candidate</li>
+                <li><strong>Viable</strong> (99 votes) — Competitive but not leading</li>
+                <li><strong>Nonviable</strong> (10 votes) — No realistic chance</li>
+            </ul>
+        </div>
+        <div id="candidateConfig" class="candidate-config"></div>
+
+        <h3>Head-to-Head Matchups</h3>
+        <div class="info-box">
+            For each pair of viable candidates, who would win in a runoff?
+            <br><small>(These are your beliefs about how candidates would perform head-to-head)</small>
+        </div>
+        <div id="matchupConfig" class="matchup-config"></div>
+
+        <button onclick="analyzeScenario()">Analyze Ballots</button>
+    </div>
+
+    <div id="results" class="results"></div>
+
+    <script src="shared.js"></script>
+    <script>
+        let candidates = [];
+        let preference = [];
+        let voteTiers = {}; // candidate -> 'frontrunner' | 'viable' | 'nonviable'
+        let matchups = {}; // 'A-B' -> true means A beats B
+
+        function setupScenario() {
+            const input = document.getElementById('preference').value;
+            preference = parsePreference(input);
+            candidates = [...preference];
+
+            // Validation
+            if (candidates.length < 2) {
+                alert('⚠️ Please enter at least 2 candidates.');
+                return;
+            }
+
+            const uniqueCandidates = new Set(candidates);
+            if (uniqueCandidates.size !== candidates.length) {
+                alert('⚠️ Each candidate must be unique.');
+                return;
+            }
+
+            if (candidates.some(c => !c || c.trim() === '')) {
+                alert('⚠️ Invalid format. Make sure each candidate name is non-empty.');
+                return;
+            }
+
+            // Initialize tiers - default to viable
+            voteTiers = {};
+            candidates.forEach(c => {
+                voteTiers[c] = 'viable';
+            });
+
+            // Initialize matchups based on preference order
+            matchups = {};
+            for (let i = 0; i < candidates.length; i++) {
+                for (let j = i + 1; j < candidates.length; j++) {
+                    // Default: higher-preferred candidate wins
+                    matchups[`${candidates[i]}-${candidates[j]}`] = true;
+                }
+            }
+
+            renderCandidateConfig();
+            renderMatchupConfig();
+            document.getElementById('scenarioConfig').style.display = 'block';
+            document.getElementById('results').innerHTML = '';
+        }
+
+        function renderCandidateConfig() {
+            const container = document.getElementById('candidateConfig');
+            container.innerHTML = candidates.map((c, idx) => `
+                <div class="candidate-row">
+                    <span class="candidate-name">${idx + 1}. ${c}</span>
+                    <div class="tier-options">
+                        <div class="tier-option frontrunner ${voteTiers[c] === 'frontrunner' ? 'selected' : ''}" 
+                             onclick="setTier('${c}', 'frontrunner')">
+                            Frontrunner (100)
+                        </div>
+                        <div class="tier-option viable ${voteTiers[c] === 'viable' ? 'selected' : ''}" 
+                             onclick="setTier('${c}', 'viable')">
+                            Viable (99)
+                        </div>
+                        <div class="tier-option nonviable ${voteTiers[c] === 'nonviable' ? 'selected' : ''}" 
+                             onclick="setTier('${c}', 'nonviable')">
+                            Nonviable (10)
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function setTier(candidate, tier) {
+            voteTiers[candidate] = tier;
+            renderCandidateConfig();
+            renderMatchupConfig();
+        }
+
+        function renderMatchupConfig() {
+            const container = document.getElementById('matchupConfig');
+            
+            // Only show matchups between viable/frontrunner candidates
+            const relevantCandidates = candidates.filter(c => 
+                voteTiers[c] === 'frontrunner' || voteTiers[c] === 'viable'
+            );
+
+            if (relevantCandidates.length < 2) {
+                container.innerHTML = `
+                    <div class="warning">
+                        At least 2 candidates must be Frontrunner or Viable to configure matchups.
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            for (let i = 0; i < relevantCandidates.length; i++) {
+                for (let j = i + 1; j < relevantCandidates.length; j++) {
+                    const c1 = relevantCandidates[i];
+                    const c2 = relevantCandidates[j];
+                    const key = `${c1}-${c2}`;
+                    const c1Wins = matchups[key] === true;
+                    const c2Wins = matchups[key] === false || matchups[`${c2}-${c1}`] === true;
+
+                    html += `
+                        <div class="matchup-row">
+                            <span class="matchup-label">${c1} vs ${c2}:</span>
+                            <div class="matchup-options">
+                                <div class="matchup-option ${c1Wins ? 'selected' : ''}" 
+                                     onclick="setMatchup('${c1}', '${c2}', true)">
+                                    ${c1} wins
+                                </div>
+                                <div class="matchup-option ${c2Wins ? 'selected' : ''}" 
+                                     onclick="setMatchup('${c1}', '${c2}', false)">
+                                    ${c2} wins
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            container.innerHTML = html;
+        }
+
+        function setMatchup(c1, c2, c1Wins) {
+            const key1 = `${c1}-${c2}`;
+            const key2 = `${c2}-${c1}`;
+            
+            // Clear both directions
+            delete matchups[key1];
+            delete matchups[key2];
+            
+            // Set the winner
+            if (c1Wins) {
+                matchups[key1] = true;
+            } else {
+                matchups[key2] = true;
+            }
+            
+            renderMatchupConfig();
+        }
+
+        function analyzeScenario() {
+            // Build base votes
+            const baseVotes = {};
+            candidates.forEach(c => {
+                switch (voteTiers[c]) {
+                    case 'frontrunner':
+                        baseVotes[c] = VOTE_TIERS.FRONTRUNNER;
+                        break;
+                    case 'viable':
+                        baseVotes[c] = VOTE_TIERS.VIABLE;
+                        break;
+                    case 'nonviable':
+                        baseVotes[c] = VOTE_TIERS.NONVIABLE;
+                        break;
+                }
+            });
+
+            // Generate all possible ballots
+            const allBallots = generateAllBallots(candidates);
+
+            // Analyze each ballot
+            const ballotOutcomes = allBallots.map(ballot => {
+                const outcome = computeRunoffOutcome(baseVotes, matchups, ballot, candidates);
+                return {
+                    ballot: ballot,
+                    gamma: outcome.Gamma,
+                    gammaKey: getGammaKey(outcome.Gamma),
+                    isSincere: isSincereBallot(ballot, preference),
+                    outcome: outcome
+                };
+            });
+
+            // Group by outcome
+            const outcomeGroups = {};
+            ballotOutcomes.forEach(bo => {
+                if (!outcomeGroups[bo.gammaKey]) {
+                    outcomeGroups[bo.gammaKey] = {
+                        gamma: bo.gamma,
+                        gammaKey: bo.gammaKey,
+                        ballots: [],
+                        rank: getOutcomeRank(bo.gamma, preference)
+                    };
+                }
+                outcomeGroups[bo.gammaKey].ballots.push(bo);
+            });
+
+            // Sort groups by preference rank (best first)
+            const sortedGroups = Object.values(outcomeGroups).sort((a, b) => a.rank - b.rank);
+
+            // Determine optimal outcomes (rank 1 = best)
+            const bestRank = sortedGroups[0]?.rank;
+            sortedGroups.forEach((g, idx) => {
+                g.isOptimal = g.rank === bestRank;
+                g.displayRank = idx + 1;
+            });
+
+            // Sort ballots within each group: sincere first
+            sortedGroups.forEach(g => {
+                g.ballots.sort((a, b) => {
+                    if (a.isSincere && !b.isSincere) return -1;
+                    if (!a.isSincere && b.isSincere) return 1;
+                    return a.ballot.length - b.ballot.length;
+                });
+            });
+
+            displayResults(baseVotes, sortedGroups, ballotOutcomes);
+        }
+
+        function displayResults(baseVotes, sortedGroups, allBallotOutcomes) {
+            const resultsDiv = document.getElementById('results');
+
+            // Summary
+            let html = `
+                <h2>Analysis Results</h2>
+                
+                <div class="vote-summary">
+                    <h3 style="margin-top: 0;">Scenario Summary</h3>
+                    <table>
+                        <tr>
+                            <th>Candidate</th>
+                            <th>Your Rank</th>
+                            <th>Votes (before you)</th>
+                            <th>Tier</th>
+                        </tr>
+                        ${candidates.map((c, idx) => `
+                            <tr>
+                                <td><strong>${c}</strong></td>
+                                <td>${idx + 1}</td>
+                                <td>${baseVotes[c]}</td>
+                                <td>${voteTiers[c].charAt(0).toUpperCase() + voteTiers[c].slice(1)}</td>
+                            </tr>
+                        `).join('')}
+                    </table>
+                    <div class="matchup-summary">
+                        <strong>Matchups:</strong> 
+                        ${Object.entries(matchups)
+                            .filter(([k, v]) => v === true)
+                            .map(([k, v]) => {
+                                const [c1, c2] = k.split('-');
+                                return `${c1} beats ${c2}`;
+                            }).join(', ') || 'None configured'}
+                    </div>
+                </div>
+
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-swatch sincere-optimal"></div>
+                        <span>Sincere & Optimal</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-swatch sincere"></div>
+                        <span>Sincere</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-swatch optimal"></div>
+                        <span>Optimal (Insincere)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-swatch insincere"></div>
+                        <span>Insincere</span>
+                    </div>
+                </div>
+
+                <div class="info-box">
+                    <strong>Reading the Results:</strong>
+                    <ul style="margin: 10px 0;">
+                        <li><strong>Γ (Gamma)</strong> = Set of possible election winners given a ballot</li>
+                        <li><strong>Optimal</strong> = Ballots that give you the best possible outcome</li>
+                        <li><strong>Sincere</strong> = Ballots that approve a "prefix" of your preference (e.g., top 1, top 2, etc.)</li>
+                    </ul>
+                </div>
+            `;
+
+            // Outcome groups
+            sortedGroups.forEach(group => {
+                const gammaDisplay = formatGamma(group.gamma);
+                const rankClass = group.displayRank === 1 ? 'rank-1' : '';
+                const optimalClass = group.isOptimal ? 'optimal' : '';
+                
+                // Count sincere ballots
+                const sincereCount = group.ballots.filter(b => b.isSincere).length;
+                const totalCount = group.ballots.length;
+
+                html += `
+                    <div class="outcome-group ${optimalClass}">
+                        <h3>
+                            Outcome: Γ = ${gammaDisplay}
+                            <span class="outcome-rank ${rankClass}">
+                                ${group.isOptimal ? '★ OPTIMAL' : `Rank #${group.displayRank}`}
+                            </span>
+                        </h3>
+                        <p style="color: #aaa; margin-top: 0;">
+                            ${totalCount} ballot${totalCount !== 1 ? 's' : ''} lead to this outcome
+                            ${sincereCount > 0 ? `(${sincereCount} sincere)` : '(none sincere)'}
+                        </p>
+                        <div class="ballot-list">
+                            ${group.ballots.map(bo => {
+                                const classes = [];
+                                if (bo.isSincere) classes.push('sincere');
+                                if (group.isOptimal) classes.push('optimal');
+                                return `<div class="ballot-item ${classes.join(' ')}" title="${bo.isSincere ? 'Sincere ballot' : 'Insincere ballot'}${group.isOptimal ? ' - Optimal outcome' : ''}">
+                                    ${formatBallot(bo.ballot)}
+                                </div>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Strategic summary
+            const optimalGroups = sortedGroups.filter(g => g.isOptimal);
+            const optimalBallots = optimalGroups.flatMap(g => g.ballots);
+            const sincereOptimal = optimalBallots.filter(b => b.isSincere);
+
+            html += `
+                <div class="section">
+                    <h3>Strategic Summary</h3>
+                    <p>
+                        <strong>Best possible outcome:</strong> Γ = ${formatGamma(optimalGroups[0]?.gamma)}
+                    </p>
+                    <p>
+                        <strong>Optimal ballots:</strong> ${optimalBallots.length} total
+                        ${sincereOptimal.length > 0 
+                            ? `(including ${sincereOptimal.length} sincere: ${sincereOptimal.map(b => formatBallot(b.ballot)).join(', ')})`
+                            : '(⚠️ none are sincere!)'}
+                    </p>
+                    ${sincereOptimal.length === 0 && optimalBallots.length > 0 ? `
+                        <div class="warning">
+                            <strong>Strategic Voting Required!</strong><br>
+                            In this scenario, achieving your best outcome requires casting an insincere ballot.
+                            This demonstrates a strategic incentive created by the runoff system.
+                        </div>
+                    ` : ''}
+                    ${sincereOptimal.length > 0 ? `
+                        <div class="info-box" style="border-left-color: #6aff6a;">
+                            <strong>✓ Sincere voting is optimal!</strong><br>
+                            You can achieve the best outcome with a sincere ballot: 
+                            <strong>${sincereOptimal.map(b => formatBallot(b.ballot)).join(' or ')}</strong>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+
+            resultsDiv.innerHTML = html;
+        }
+    </script>
+</body>
+
+</html>

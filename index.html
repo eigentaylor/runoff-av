@@ -15,6 +15,43 @@
             color: #e0e0e0;
         }
 
+        /* Navigation */
+        nav {
+            background: #2a2a2a;
+            padding: 15px 20px;
+            margin: -20px -20px 20px -20px;
+            border-bottom: 2px solid #4a9eff;
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+
+        nav a {
+            color: #6ab7ff;
+            text-decoration: none;
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        nav a:hover {
+            background: #3a3a3a;
+            color: #4a9eff;
+        }
+
+        nav a.active {
+            background: #4a9eff;
+            color: white;
+        }
+
+        nav .nav-title {
+            color: #4a9eff;
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-right: auto;
+        }
+
         h1 {
             color: #4a9eff;
             border-bottom: 2px solid #4a9eff;
@@ -199,6 +236,12 @@
 </head>
 
 <body>
+    <nav>
+        <span class="nav-title">AV Runoff Tools</span>
+        <a href="index.html" class="active">Strategy Comparison</a>
+        <a href="analyzer.html">Scenario Analyzer</a>
+    </nav>
+
     <h1>Approval Runoff Strategy Comparison Tool</h1>
     <p style="font-size: 1.1em; color: #ccc; margin-bottom: 20px;">
         Explore strategic voting in runoff approval systems using constructions from
@@ -227,7 +270,7 @@
             <li>99 votes: Viable but not leading</li>
             <li>10 votes: Nonviable</li>
         </ul>
-        What this tool shows is that when multiple candidates appear to be viable, the addition of a runoff can add
+        What this tool shows is that when multiple candidates appear to be viable, it is mathematically proven that the addition of a runoff can add
         perverse strategic incentives depending on the perceived or predicted head-to-head matchups that would occur in
         the final top-two runoff.
     </div>
@@ -287,16 +330,12 @@
 
     <div id="results" class="results"></div>
 
+    <script src="shared.js"></script>
     <script>
         let candidates = ['A', 'B', 'C'];
         let preference = ['A', 'B', 'C'];
         let selectedS = new Set();
         let selectedT = new Set();
-
-        function parsePreference(prefString) {
-            const parts = prefString.split('>').map(s => s.trim());
-            return parts;
-        }
 
         function updatePreference() {
             const input = document.getElementById('preference').value;
@@ -343,7 +382,7 @@
             selectedS.clear();
             selectedT.clear();
 
-            const allBallots = generateAllBallots();
+            const allBallots = generateAllBallots(candidates);
 
             document.getElementById('strategyS').innerHTML = allBallots
                 .map(ballot => {
@@ -364,24 +403,6 @@
                         <label for="${id}">${label}</label>
                     </div>`;
                 }).join('');
-        }
-
-        function generateAllBallots() {
-            const ballots = [[]]; // Start with abstention
-            const n = candidates.length;
-
-            // Generate all non-empty subsets EXCEPT the full set (which equals abstention)
-            for (let i = 1; i < Math.pow(2, n) - 1; i++) { // Note: -1 to exclude full set
-                const ballot = [];
-                for (let j = 0; j < n; j++) {
-                    if (i & (1 << j)) {
-                        ballot.push(candidates[j]);
-                    }
-                }
-                ballots.push(ballot);
-            }
-
-            return ballots;
         }
 
         function toggleBallot(strategy, ballotStr) {
