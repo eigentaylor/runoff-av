@@ -245,7 +245,7 @@ function formatGamma(gamma) {
  */
 function isSincereBallot(ballot, preference) {
     if (ballot.length === 0) return true; // Abstention is sincere
-    
+
     // Find the lowest-ranked approved candidate
     let lowestApprovedRank = -1;
     for (const c of ballot) {
@@ -254,14 +254,14 @@ function isSincereBallot(ballot, preference) {
             lowestApprovedRank = rank;
         }
     }
-    
+
     // Check if all candidates ranked above the lowest are also approved
     for (let i = 0; i <= lowestApprovedRank; i++) {
         if (!ballot.includes(preference[i])) {
             return false;
         }
     }
-    
+
     return true;
 }
 
@@ -278,14 +278,14 @@ function getGammaKey(gamma) {
  */
 function getOutcomeRank(gamma, preference) {
     if (gamma.length === 0) return Infinity;
-    
+
     // Best possible winner rank
     const bestRank = Math.min(...gamma.map(c => preference.indexOf(c)));
     // Worst possible winner rank
     const worstRank = Math.max(...gamma.map(c => preference.indexOf(c)));
     // Uncertainty penalty
     const uncertainty = gamma.length - 1;
-    
+
     // Primary: best rank, Secondary: worst rank, Tertiary: uncertainty
     return bestRank * 1000 + worstRank * 10 + uncertainty;
 }

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scenario Analyzer - AV Runoff</title>
+    <title>Scenario Analyzer - Approval with Top-2 Runoff</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -271,6 +271,42 @@
             border: 2px solid #3a3a3a;
             font-family: monospace;
             font-size: 0.95em;
+            cursor: help;
+            position: relative;
+        }
+
+        .ballot-item:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1a1a1a;
+            color: #e0e0e0;
+            padding: 12px 16px;
+            border-radius: 6px;
+            border: 2px solid #4a9eff;
+            white-space: pre-line;
+            z-index: 1000;
+            margin-bottom: 8px;
+            min-width: 250px;
+            max-width: 400px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            font-size: 0.9em;
+            line-height: 1.5;
+            pointer-events: none;
+        }
+
+        .ballot-item:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 8px solid transparent;
+            border-top-color: #4a9eff;
+            z-index: 1001;
+            pointer-events: none;
         }
 
         .ballot-item.sincere {
@@ -390,10 +426,10 @@
         <a href="analyzer.html" class="active">Scenario Analyzer</a>
     </nav>
 
-    <h1>Scenario Analyzer</h1>
+    <h1>Approval Runoff Scenario Analyzer</h1>
     <p style="font-size: 1.1em; color: #ccc; margin-bottom: 20px;">
-        Define a specific election scenario and see which approval ballots lead to which outcomes.
-        Find your optimal voting strategy given your preferences and beliefs about the election.
+        Define a specific <strong>approval voting with top-2 runoff</strong> scenario and see which approval ballots lead to which outcomes.
+        The top two vote-getters advance to a runoff election. Find your optimal voting strategy given your preferences and beliefs.
     </p>
 
     <div class="section">
@@ -411,22 +447,22 @@
 
     <div id="scenarioConfig" class="section" style="display: none;">
         <h2>Step 2: Configure the Scenario</h2>
-        
-        <h3>Candidate Viability</h3>
+
+        <h3>Candidate Viability (First Round)</h3>
         <div class="info-box">
-            Assign each candidate their perceived viability in the first round:
+            Assign each candidate their perceived viability in the <strong>first round</strong> (before the top-2 runoff):
             <ul style="margin: 10px 0;">
-                <li><strong>Frontrunner</strong> (100 votes) — Leading candidate</li>
-                <li><strong>Viable</strong> (99 votes) — Competitive but not leading</li>
-                <li><strong>Nonviable</strong> (10 votes) — No realistic chance</li>
+                <li><strong>Frontrunner</strong> (100 votes) — Leading candidate, likely to make runoff</li>
+                <li><strong>Viable</strong> (99 votes) — Competitive but not leading, could make runoff</li>
+                <li><strong>Nonviable</strong> (10 votes) — No realistic chance to reach the runoff</li>
             </ul>
         </div>
         <div id="candidateConfig" class="candidate-config"></div>
 
-        <h3>Head-to-Head Matchups</h3>
+        <h3>Runoff Matchups (Second Round)</h3>
         <div class="info-box">
-            For each pair of viable candidates, who would win in a runoff?
-            <br><small>(These are your beliefs about how candidates would perform head-to-head)</small>
+            For each pair of viable candidates, who would win if they faced each other in the <strong>top-2 runoff</strong>?
+            <br><small>(These are your beliefs about how candidates would perform head-to-head in the runoff election)</small>
         </div>
         <div id="matchupConfig" class="matchup-config"></div>
 
@@ -516,9 +552,9 @@
 
         function renderMatchupConfig() {
             const container = document.getElementById('matchupConfig');
-            
+
             // Only show matchups between viable/frontrunner candidates
-            const relevantCandidates = candidates.filter(c => 
+            const relevantCandidates = candidates.filter(c =>
                 voteTiers[c] === 'frontrunner' || voteTiers[c] === 'viable'
             );
 
@@ -563,18 +599,18 @@
         function setMatchup(c1, c2, c1Wins) {
             const key1 = `${c1}-${c2}`;
             const key2 = `${c2}-${c1}`;
-            
+
             // Clear both directions
             delete matchups[key1];
             delete matchups[key2];
-            
+
             // Set the winner
             if (c1Wins) {
                 matchups[key1] = true;
             } else {
                 matchups[key2] = true;
             }
-            
+
             renderMatchupConfig();
         }
 
@@ -674,11 +710,11 @@
                     <div class="matchup-summary">
                         <strong>Matchups:</strong> 
                         ${Object.entries(matchups)
-                            .filter(([k, v]) => v === true)
-                            .map(([k, v]) => {
-                                const [c1, c2] = k.split('-');
-                                return `${c1} beats ${c2}`;
-                            }).join(', ') || 'None configured'}
+                    .filter(([k, v]) => v === true)
+                    .map(([k, v]) => {
+                        const [c1, c2] = k.split('-');
+                        return `${c1} beats ${c2}`;
+                    }).join(', ') || 'None configured'}
                     </div>
                 </div>
 
@@ -704,9 +740,10 @@
                 <div class="info-box">
                     <strong>Reading the Results:</strong>
                     <ul style="margin: 10px 0;">
-                        <li><strong>Γ (Gamma)</strong> = Set of possible election winners given a ballot</li>
+                        <li><strong>Γ (Gamma)</strong> = Set of possible <strong>final runoff winners</strong> given a ballot</li>
                         <li><strong>Optimal</strong> = Ballots that give you the best possible outcome</li>
                         <li><strong>Sincere</strong> = Ballots that approve a "prefix" of your preference (e.g., top 1, top 2, etc.)</li>
+                        <li><strong>Hover over a ballot</strong> to see which candidates advance to the runoff and who wins</li>
                     </ul>
                 </div>
             `;
@@ -716,7 +753,7 @@
                 const gammaDisplay = formatGamma(group.gamma);
                 const rankClass = group.displayRank === 1 ? 'rank-1' : '';
                 const optimalClass = group.isOptimal ? 'optimal' : '';
-                
+
                 // Count sincere ballots
                 const sincereCount = group.ballots.filter(b => b.isSincere).length;
                 const totalCount = group.ballots.length;
@@ -724,7 +761,7 @@
                 html += `
                     <div class="outcome-group ${optimalClass}">
                         <h3>
-                            Outcome: Γ = ${gammaDisplay}
+                            Runoff Outcome: Γ = ${gammaDisplay}
                             <span class="outcome-rank ${rankClass}">
                                 ${group.isOptimal ? '★ OPTIMAL' : `Rank #${group.displayRank}`}
                             </span>
@@ -735,13 +772,33 @@
                         </p>
                         <div class="ballot-list">
                             ${group.ballots.map(bo => {
-                                const classes = [];
-                                if (bo.isSincere) classes.push('sincere');
-                                if (group.isOptimal) classes.push('optimal');
-                                return `<div class="ballot-item ${classes.join(' ')}" title="${bo.isSincere ? 'Sincere ballot' : 'Insincere ballot'}${group.isOptimal ? ' - Optimal outcome' : ''}">
+                    const classes = [];
+                    if (bo.isSincere) classes.push('sincere');
+                    if (group.isOptimal) classes.push('optimal');
+                    
+                    // Build tooltip showing runoff details
+                    const outcome = bo.outcome;
+                    let tooltip = `First round with ${formatBallot(bo.ballot)}:\n`;
+                    const votesWithBallot = {...baseVotes};
+                    bo.ballot.forEach(c => votesWithBallot[c]++);
+                    tooltip += `Votes: ${candidates.map(c => `${c}:${votesWithBallot[c]}`).join(', ')}\n\n`;
+                    
+                    if (outcome.possibleRunoffs.length === 1) {
+                        const runoff = outcome.possibleRunoffs[0];
+                        tooltip += `Top 2 runoff: ${runoff.pair[0]} vs ${runoff.pair[1]}\n`;
+                        tooltip += `Winner: ${runoff.winner || 'Tie'}`;
+                    } else {
+                        tooltip += `Possible runoffs:\n`;
+                        outcome.possibleRunoffs.forEach(r => {
+                            tooltip += `  • ${r.pair[0]} vs ${r.pair[1]} → ${r.winner || 'Tie'}\n`;
+                        });
+                        tooltip += `Possible winners: ${outcome.Gamma.join(', ')}`;
+                    }
+                    
+                    return `<div class="ballot-item ${classes.join(' ')}" data-tooltip="${tooltip.replace(/"/g, '&quot;')}">
                                     ${formatBallot(bo.ballot)}
                                 </div>`;
-                            }).join('')}
+                }).join('')}
                         </div>
                     </div>
                 `;
@@ -756,19 +813,20 @@
                 <div class="section">
                     <h3>Strategic Summary</h3>
                     <p>
-                        <strong>Best possible outcome:</strong> Γ = ${formatGamma(optimalGroups[0]?.gamma)}
+                        <strong>Best possible runoff outcome:</strong> Γ = ${formatGamma(optimalGroups[0]?.gamma)}
                     </p>
                     <p>
                         <strong>Optimal ballots:</strong> ${optimalBallots.length} total
-                        ${sincereOptimal.length > 0 
-                            ? `(including ${sincereOptimal.length} sincere: ${sincereOptimal.map(b => formatBallot(b.ballot)).join(', ')})`
-                            : '(⚠️ none are sincere!)'}
+                        ${sincereOptimal.length > 0
+                    ? `(including ${sincereOptimal.length} sincere: ${sincereOptimal.map(b => formatBallot(b.ballot)).join(', ')})`
+                    : '(⚠️ none are sincere!)'}
                     </p>
                     ${sincereOptimal.length === 0 && optimalBallots.length > 0 ? `
                         <div class="warning">
                             <strong>Strategic Voting Required!</strong><br>
-                            In this scenario, achieving your best outcome requires casting an insincere ballot.
-                            This demonstrates a strategic incentive created by the runoff system.
+                            In this scenario, achieving your best outcome requires casting an insincere ballot in the first round.
+                            This demonstrates a strategic incentive created by the <strong>top-2 runoff</strong> system—your first-round
+                            ballot affects which two candidates face off in the runoff, which determines the final winner.
                         </div>
                     ` : ''}
                     ${sincereOptimal.length > 0 ? `
