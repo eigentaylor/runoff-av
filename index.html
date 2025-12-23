@@ -232,6 +232,60 @@
             font-weight: 600;
             margin-bottom: 10px;
         }
+
+        .strategy-indicators {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 10px 0;
+        }
+
+        .indicator {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .indicator.sincere {
+            background: #2a4a4a;
+            color: #aaa;
+        }
+
+        .indicator.insincere {
+            background: #4a3a2a;
+            color: #ffb366;
+        }
+
+        .indicator.burying {
+            background: #4a2a2a;
+            color: #ff6b6b;
+        }
+
+        .indicator.cw-definitely {
+            background: #2a4a2a;
+            color: #6aff6a;
+        }
+
+        .indicator.cw-possibly {
+            background: #3a3a2a;
+            color: #ffdd66;
+        }
+
+        .indicator.cw-not {
+            background: #4a2a2a;
+            color: #ff6b6b;
+        }
+
+        .cw-info {
+            background: #2a3a4a;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border-left: 3px solid #6ab7ff;
+            font-size: 0.9em;
+        }
     </style>
 </head>
 
@@ -866,6 +920,73 @@
             }
         }
 
+        function findCondorcetWinner(matchups, candidateList) {
+            // Find the Condorcet winner: candidate who beats all others head-to-head
+            for (const candidate of candidateList) {
+                let beatsAll = true;
+                for (const opponent of candidateList) {
+                    if (candidate === opponent) continue;
+                    const key = `${candidate}-${opponent}`;
+                    if (!matchups[key]) {
+                        beatsAll = false;
+                        break;
+                    }
+                }
+                if (beatsAll) {
+                    return candidate;
+                }
+            }
+            return null; // No Condorcet winner
+        }
+
+        function isSincereStrategy(strategy, preference) {
+            // A strategy is sincere if it approves exactly the top k candidates for some k
+            if (strategy.length === 0) return true; // Abstention can be considered sincere
+            
+            // Check if strategy contains exactly the top k candidates
+            for (let k = 1; k <= preference.length; k++) {
+                const topK = preference.slice(0, k);
+                if (arraysEqualUnordered(strategy, topK)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function isBuryingCondorcetWinner(strategy, condorcetWinner, preference) {
+            // Burying occurs when:
+            // 1. The voter doesn't approve the Condorcet winner
+            // 2. The voter prefers the Condorcet winner over at least one approved candidate
+            if (!condorcetWinner) return false;
+            if (strategy.includes(condorcetWinner)) return false; // Can't bury if you approve them
+            
+            const cwIndex = preference.indexOf(condorcetWinner);
+            if (cwIndex === -1) return false;
+            
+            // Check if any approved candidate is ranked lower than the CW
+            for (const approved of strategy) {
+                const approvedIndex = preference.indexOf(approved);
+                if (approvedIndex > cwIndex) {
+                    return true; // Approving someone worse than CW = burying
+                }
+            }
+            return false;
+        }
+
+        function analyzeCondorcetOutcome(outcome, condorcetWinner) {
+            // Determine if Condorcet winner is definitely/possibly/not elected
+            if (!condorcetWinner) return { status: 'none', message: 'No Condorcet winner exists' };
+            
+            const gamma = outcome.Gamma;
+            if (gamma.length === 1 && gamma[0] === condorcetWinner) {
+                return { status: 'definitely', message: 'CW definitely elected', class: 'cw-definitely' };
+            } else if (gamma.includes(condorcetWinner)) {
+                return { status: 'possibly', message: 'CW possibly elected', class: 'cw-possibly' };
+            } else {
+                return { status: 'not', message: 'CW not elected', class: 'cw-not' };
+            }
+        }
+
         function compareOutcomes(outcome1, outcome2, preference) {
             // Compare two outcomes using Axioms P2 and R2
             // Returns: 1 if outcome1 better, -1 if outcome2 better, 0 if unclear/equal
@@ -1008,10 +1129,23 @@
                     adjustedVotes[c] = (adjustedVotes[c] || 0) - 1;
                 });
 
+                // Analyze Condorcet winner
+                const condorcetWinner = findCondorcetWinner(scenario.matchups, candidates);
+                const favoredCWAnalysis = analyzeCondorcetOutcome(favoredOutcome, condorcetWinner);
+                const otherCWAnalysis = analyzeCondorcetOutcome(otherOutcome, condorcetWinner);
+
+                // Check sincerity and burying
+                const favoredSincere = isSincereStrategy(favoredOriginal, preference);
+                const otherSincere = isSincereStrategy(otherOriginal, preference);
+                const favoredBurying = isBuryingCondorcetWinner(favoredOriginal, condorcetWinner, preference);
+                const otherBurying = isBuryingCondorcetWinner(otherOriginal, condorcetWinner, preference);
+
                 html += `
                     <div class="scenario">
                         <span class="construction-type">${scenario.type} Construction</span>
                         <h3>Scenario ${idx + 1}: Where ${formatBallot(favoredOriginal)} beats ${formatBallot(otherOriginal)}</h3>
+                        
+                        ${condorcetWinner ? `<div class="cw-info">🏆 <strong>Condorcet Winner:</strong> ${condorcetWinner} (beats all others head-to-head)</div>` : '<div class="cw-info">⚠️ No Condorcet winner exists in this scenario</div>'}
                         
                         <p><strong>Setup:</strong> ${scenario.description}</p>
                         
@@ -1066,7 +1200,17 @@
                             • Possible runoffs: ${favoredOutcome.possibleRunoffs.map(r =>
                     `${r.pair[0]} vs ${r.pair[1]} → <strong>${r.winner}</strong>`
                 ).join(', ')}<br/>
-                            • <strong>Γ(>) = <span class="outcome-better">{${favoredOutcome.Gamma.join(',')}}</span></strong> (possible winners)<br/><br/>
+                            • <strong>Γ(>) = <span class="outcome-better">{${favoredOutcome.Gamma.join(',')}}</span></strong> (possible winners)<br/>
+                            <div class="strategy-indicators" style="margin-top: 8px;">
+                                <span class="indicator ${favoredSincere ? 'sincere' : 'insincere'}">
+                                    ${favoredSincere ? '✓ Sincere' : '⚠ Insincere'}
+                                </span>
+                                ${favoredBurying ? '<span class="indicator burying">⚠ Burying Condorcet Winner</span>' : ''}
+                                <span class="indicator ${favoredCWAnalysis.class}">
+                                    ${favoredCWAnalysis.message}
+                                </span>
+                            </div>
+                            <br/>
                             
                             <strong>With ${formatBallot(otherOriginal)}:</strong><br/>
                             • Vote totals: ${candidates.map(c => {
@@ -1078,7 +1222,17 @@
                             • Possible runoffs: ${otherOutcome.possibleRunoffs.map(r =>
                     `${r.pair[0]} vs ${r.pair[1]} → <strong>${r.winner}</strong>`
                 ).join(', ')}<br/>
-                            • <strong>Γ(>) = <span class="outcome-worse">{${otherOutcome.Gamma.join(',')}}</span></strong> (possible winners)<br/><br/>
+                            • <strong>Γ(>) = <span class="outcome-worse">{${otherOutcome.Gamma.join(',')}}</span></strong> (possible winners)<br/>
+                            <div class="strategy-indicators" style="margin-top: 8px;">
+                                <span class="indicator ${otherSincere ? 'sincere' : 'insincere'}">
+                                    ${otherSincere ? '✓ Sincere' : '⚠ Insincere'}
+                                </span>
+                                ${otherBurying ? '<span class="indicator burying">⚠ Burying Condorcet Winner</span>' : ''}
+                                <span class="indicator ${otherCWAnalysis.class}">
+                                    ${otherCWAnalysis.message}
+                                </span>
+                            </div>
+                            <br/>
                             
                             Given your preference ${preference.join('>')}, you prefer Γ(>) = {${favoredOutcome.Gamma.join(',')}} over 
                             Γ(>) = {${otherOutcome.Gamma.join(',')}}, so ${formatBallot(favoredOriginal)} is better than ${formatBallot(otherOriginal)} in this scenario.

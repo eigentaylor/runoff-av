@@ -497,8 +497,10 @@
 
     <h1 id="page-title">Approval Runoff Scenario Analyzer</h1>
     <p id="page-description" style="font-size: 1.1em; color: #ccc; margin-bottom: 20px;">
-        Define a specific <strong>approval voting with top-2 runoff</strong> scenario and see which approval ballots lead to which outcomes.
-        The top two vote-getters advance to a runoff election. Find your optimal voting strategy given your preferences and beliefs.
+        Define a specific <strong>approval voting with top-2 runoff</strong> scenario and see which approval ballots
+        lead to which outcomes.
+        The top two vote-getters advance to a runoff election. Find your optimal voting strategy given your preferences
+        and beliefs.
     </p>
 
     <div class="section">
@@ -531,8 +533,10 @@
         <div id="matchup-section">
             <h3>Runoff Matchups (Second Round)</h3>
             <div class="info-box">
-                For each pair of viable candidates, who would win if they faced each other in the <strong>top-2 runoff</strong>?
-                <br><small>(These are your beliefs about how candidates would perform head-to-head in the runoff election)</small>
+                For each pair of viable candidates, who would win if they faced each other in the <strong>top-2
+                    runoff</strong>?
+                <br><small>(These are your beliefs about how candidates would perform head-to-head in the runoff
+                    election)</small>
             </div>
             <div id="matchupConfig" class="matchup-config"></div>
         </div>
@@ -567,20 +571,77 @@
         let voteTiers = {}; // candidate -> 'frontrunner' | 'viable' | 'nonviable'
         let matchups = {}; // 'A-B' -> true means A beats B
 
+        // LocalStorage keys
+        const STORAGE_KEYS = {
+            PREFERENCE: 'runoffav_preference',
+            VOTE_TIERS: 'runoffav_voteTiers',
+            MATCHUPS: 'runoffav_matchups'
+        };
+
+        // Save state to localStorage
+        function saveState() {
+            try {
+                localStorage.setItem(STORAGE_KEYS.PREFERENCE, preference.join('>'));
+                localStorage.setItem(STORAGE_KEYS.VOTE_TIERS, JSON.stringify(voteTiers));
+                localStorage.setItem(STORAGE_KEYS.MATCHUPS, JSON.stringify(matchups));
+            } catch (e) {
+                console.warn('Failed to save state:', e);
+            }
+        }
+
+        // Load state from localStorage
+        function loadState() {
+            try {
+                const savedPreference = localStorage.getItem(STORAGE_KEYS.PREFERENCE);
+                if (savedPreference) {
+                    document.getElementById('preference').value = savedPreference;
+                    return true;
+                }
+            } catch (e) {
+                console.warn('Failed to load state:', e);
+            }
+            return false;
+        }
+
+        // Load cached vote tiers and matchups
+        function loadConfigState() {
+            try {
+                const savedTiers = localStorage.getItem(STORAGE_KEYS.VOTE_TIERS);
+                const savedMatchups = localStorage.getItem(STORAGE_KEYS.MATCHUPS);
+
+                if (savedTiers) {
+                    const parsed = JSON.parse(savedTiers);
+                    // Only load if candidates match
+                    const savedCandidates = Object.keys(parsed);
+                    if (savedCandidates.length === candidates.length &&
+                        savedCandidates.every(c => candidates.includes(c))) {
+                        voteTiers = parsed;
+                    }
+                }
+
+                if (savedMatchups) {
+                    const parsed = JSON.parse(savedMatchups);
+                    matchups = parsed;
+                }
+            } catch (e) {
+                console.warn('Failed to load config state:', e);
+            }
+        }
+
         // Update page text based on voting mode
         function updatePageText() {
             const isApprovalMode = getVotingMode() === 'approval';
-            
+
             // Update title
-            document.getElementById('page-title').textContent = isApprovalMode 
-                ? 'Ordinary Approval Voting Analyzer' 
+            document.getElementById('page-title').textContent = isApprovalMode
+                ? 'Ordinary Approval Voting Analyzer'
                 : 'Approval Runoff Scenario Analyzer';
-            
+
             // Update description
             document.getElementById('page-description').innerHTML = isApprovalMode
                 ? 'Define a specific <strong>ordinary approval voting</strong> scenario and see which approval ballots lead to which outcomes. The candidate(s) with the most votes win directly. Find your optimal voting strategy given your preferences and beliefs.'
                 : 'Define a specific <strong>approval voting with top-2 runoff</strong> scenario and see which approval ballots lead to which outcomes. The top two vote-getters advance to a runoff election. Find your optimal voting strategy given your preferences and beliefs.';
-            
+
             // Update footer toggle buttons - use remove/add instead of toggle for reliability
             const runoffBtn = document.getElementById('mode-runoff');
             const approvalBtn = document.getElementById('mode-approval');
@@ -593,11 +654,11 @@
                     approvalBtn.classList.remove('active');
                 }
             }
-            
-            document.getElementById('mode-hint').textContent = isApprovalMode 
-                ? 'Highest vote-getter(s) win directly' 
+
+            document.getElementById('mode-hint').textContent = isApprovalMode
+                ? 'Highest vote-getter(s) win directly'
                 : 'Top 2 advance to a runoff election';
-            
+
             // Keep matchup section visible but update its info text to explain it's ignored in approval mode
             const matchupSection = document.getElementById('matchup-section');
             if (matchupSection) {
@@ -648,8 +709,11 @@
             }
         });
 
-        // Initialize page text on load
-        document.addEventListener('DOMContentLoaded', updatePageText);
+        // Initialize page text on load and load cached preference
+        document.addEventListener('DOMContentLoaded', () => {
+            updatePageText();
+            loadState();
+        });
 
         function setupScenario() {
             const input = document.getElementById('preference').value;
@@ -679,14 +743,15 @@
                 voteTiers[c] = 'viable';
             });
 
-            // Initialize matchups based on preference order
+            // Initialize matchups - default to unknown (no winner set)
             matchups = {};
-            for (let i = 0; i < candidates.length; i++) {
-                for (let j = i + 1; j < candidates.length; j++) {
-                    // Default: higher-preferred candidate wins
-                    matchups[`${candidates[i]}-${candidates[j]}`] = true;
-                }
-            }
+            // Don't set any default matchups - leave them all as unknown
+
+            // Try to load cached configuration
+            loadConfigState();
+
+            // Save preference
+            saveState();
 
             renderCandidateConfig();
             renderMatchupConfig();
@@ -721,6 +786,7 @@
             voteTiers[candidate] = tier;
             renderCandidateConfig();
             renderMatchupConfig();
+            saveState();
         }
 
         function renderMatchupConfig() {
@@ -745,20 +811,26 @@
                 for (let j = i + 1; j < relevantCandidates.length; j++) {
                     const c1 = relevantCandidates[i];
                     const c2 = relevantCandidates[j];
-                    const key = `${c1}-${c2}`;
-                    const c1Wins = matchups[key] === true;
-                    const c2Wins = matchups[key] === false || matchups[`${c2}-${c1}`] === true;
+                    const key1 = `${c1}-${c2}`;
+                    const key2 = `${c2}-${c1}`;
+                    const c1Wins = matchups[key1] === true;
+                    const c2Wins = matchups[key2] === true;
+                    const unknown = !c1Wins && !c2Wins;
 
                     html += `
                         <div class="matchup-row">
                             <span class="matchup-label">${c1} vs ${c2}:</span>
                             <div class="matchup-options">
+                                <div class="matchup-option ${unknown ? 'selected' : ''}" 
+                                     onclick="setMatchup('${c1}', '${c2}', 'unknown')">
+                                    Unknown
+                                </div>
                                 <div class="matchup-option ${c1Wins ? 'selected' : ''}" 
-                                     onclick="setMatchup('${c1}', '${c2}', true)">
+                                     onclick="setMatchup('${c1}', '${c2}', 'c1')">
                                     ${c1} wins
                                 </div>
                                 <div class="matchup-option ${c2Wins ? 'selected' : ''}" 
-                                     onclick="setMatchup('${c1}', '${c2}', false)">
+                                     onclick="setMatchup('${c1}', '${c2}', 'c2')">
                                     ${c2} wins
                                 </div>
                             </div>
@@ -769,7 +841,7 @@
             container.innerHTML = html;
         }
 
-        function setMatchup(c1, c2, c1Wins) {
+        function setMatchup(c1, c2, winner) {
             const key1 = `${c1}-${c2}`;
             const key2 = `${c2}-${c1}`;
 
@@ -777,14 +849,18 @@
             delete matchups[key1];
             delete matchups[key2];
 
-            // Set the winner
-            if (c1Wins) {
+            // Set the winner (or leave both undefined for unknown)
+            if (winner === 'c1') {
                 matchups[key1] = true;
-            } else {
+            } else if (winner === 'c2') {
                 matchups[key2] = true;
             }
+            // If winner === 'unknown', leave both undefined
+            // This causes getRunoffWinner to return null, 
+            // which makes both candidates possible winners
 
             renderMatchupConfig();
+            saveState();
         }
 
         function analyzeScenario() {
@@ -859,8 +935,8 @@
             const resultsDiv = document.getElementById('results');
             const isApprovalMode = getVotingMode() === 'approval';
             const outcomeLabel = isApprovalMode ? 'Winners' : 'Runoff Outcome';
-            const gammaDescription = isApprovalMode 
-                ? 'Set of winner(s) with highest votes' 
+            const gammaDescription = isApprovalMode
+                ? 'Set of winner(s) with highest votes'
                 : 'Set of possible <strong>final runoff winners</strong> given a ballot';
 
             // Summary
@@ -961,14 +1037,14 @@
                     const classes = [];
                     if (bo.isSincere) classes.push('sincere');
                     if (group.isOptimal) classes.push('optimal');
-                    
+
                     // Build tooltip showing details
                     const outcome = bo.outcome;
                     let tooltip = `${isApprovalMode ? 'Votes' : 'First round'} with ${formatBallot(bo.ballot)}:\n`;
-                    const votesWithBallot = {...baseVotes};
+                    const votesWithBallot = { ...baseVotes };
                     bo.ballot.forEach(c => votesWithBallot[c]++);
                     tooltip += `Votes: ${candidates.map(c => `${c}:${votesWithBallot[c]}`).join(', ')}\n\n`;
-                    
+
                     if (isApprovalMode) {
                         tooltip += `Winner(s): ${outcome.Gamma.join(', ')}`;
                     } else if (outcome.possibleRunoffs.length === 1) {
@@ -984,7 +1060,7 @@
                     } else {
                         tooltip += `Winners: ${outcome.Gamma.join(', ')}`;
                     }
-                    
+
                     return `<div class="ballot-item ${classes.join(' ')}" data-tooltip="${tooltip.replace(/"/g, '&quot;')}">
                                     ${formatBallot(bo.ballot)}
                                 </div>`;
