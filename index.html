@@ -942,7 +942,7 @@
         function isSincereStrategy(strategy, preference) {
             // A strategy is sincere if it approves exactly the top k candidates for some k
             if (strategy.length === 0) return true; // Abstention can be considered sincere
-            
+
             // Check if strategy contains exactly the top k candidates
             for (let k = 1; k <= preference.length; k++) {
                 const topK = preference.slice(0, k);
@@ -959,10 +959,10 @@
             // 2. The voter prefers the Condorcet winner over at least one approved candidate
             if (!condorcetWinner) return false;
             if (strategy.includes(condorcetWinner)) return false; // Can't bury if you approve them
-            
+
             const cwIndex = preference.indexOf(condorcetWinner);
             if (cwIndex === -1) return false;
-            
+
             // Check if any approved candidate is ranked lower than the CW
             for (const approved of strategy) {
                 const approvedIndex = preference.indexOf(approved);
@@ -976,7 +976,7 @@
         function analyzeCondorcetOutcome(outcome, condorcetWinner) {
             // Determine if Condorcet winner is definitely/possibly/not elected
             if (!condorcetWinner) return { status: 'none', message: 'No Condorcet winner exists' };
-            
+
             const gamma = outcome.Gamma;
             if (gamma.length === 1 && gamma[0] === condorcetWinner) {
                 return { status: 'definitely', message: 'CW definitely elected', class: 'cw-definitely' };
