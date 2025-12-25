@@ -712,7 +712,38 @@
         // Initialize page text on load and load cached preference
         document.addEventListener('DOMContentLoaded', () => {
             updatePageText();
-            loadState();
+
+            // Auto-load the default scenario
+            const hasLoadedState = loadState();
+
+            // Set up the default scenario
+            preference = ['Peltola', 'Begich', 'Palin'];
+            candidates = [...preference];
+
+            // Set vote tiers
+            voteTiers = {
+                'Peltola': 'frontrunner',
+                'Begich': 'viable',
+                'Palin': 'viable'
+            };
+
+            // Set matchups (Begich beats both, Peltola beats Palin)
+            matchups = {
+                'Begich-Peltola': true,  // Begich beats Peltola
+                'Begich-Palin': true,    // Begich beats Palin
+                'Peltola-Palin': true    // Peltola beats Palin
+            };
+
+            // Save this as the initial state
+            saveState();
+
+            // Render the configuration UI
+            renderCandidateConfig();
+            renderMatchupConfig();
+            document.getElementById('scenarioConfig').style.display = 'block';
+
+            // Automatically analyze
+            analyzeScenario();
         });
 
         function setupScenario() {
